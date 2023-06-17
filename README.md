@@ -44,7 +44,7 @@ In the menu
 
 Within the menu, X is confirm and Z is to go back (or exit).
 
-In the overworld, the controller layout is:
+In the dungeon, the controller layout is:
 
 * Z -- gear and equip menu
 * X -- item menu
@@ -56,5 +56,7 @@ If the same action is provided from multiple pieces of gear, the action is impro
 ## Parry
 
 There is a unique parry mechanic. It is basically a guage which starts slow and then speeds up, and the idea is to get the gauuge to be within a certain precise point near the end. A successful parry will result in a percentage of damage being reflected back at the enemy, taking no damage yourself, and the parried attack doesn't consume a move charge. 
+
+Parrying has an effect on sanity.
 
 
