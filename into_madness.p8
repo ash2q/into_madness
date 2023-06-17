@@ -9,15 +9,16 @@ __lua__
 --a turn based rogue like with
 --a sanity mechanic
 
---the "crawl" state is turn
+--the "dungeon" state is turn
 --based, while the "combat"
 --state is real time
 
 game_state={
 	dungeon=1,
 	combat=2,
-	inventory=3,
-	shop=4
+	parry=3,
+	inventory=4,
+	shop=5
 }
 anim_c=0
 state=game_state.dungeon
@@ -288,7 +289,15 @@ p1={
 	p_mv={},
 	s_mv={},
 	actions={},
-	equips={}
+	equips={},
+	eng=0,
+	max_eng=0,
+	eng_rate=0.5,
+	clr=0,
+	clr_rate=0,
+	max_clr=0,
+	clr_rate=0.5,
+	sanity=100
 }
 
 
@@ -314,12 +323,31 @@ function init_tb_enemies()
 		tb_spr_size=1,
 		c_anim={6,7},
 		health=10,
-		dmg=2,
-		spd=1.0,
-		def=2,
-		moves={},
-		actions={},
+		moves={slash_move},
+		actions={bounce_act},
 		tb_move=tb_move_square,
+		--energy(moves)
+		eng=0,
+		max_eng=0,
+		eng_rate=1,
+		--clarity(actions)
+		clr=0,
+		max_clr=0,
+		clr_rate=0
+	}
+end
+
+
+bounce_act={}
+
+function init_actions()
+	bounce_act={
+		name="bounce",
+		activate=do_bounce_act,
+		--how many points needed
+		--to use once.
+		act_points=120,
+		range=80
 	}
 end
 
@@ -342,16 +370,19 @@ function roll_stats(s,total)
 	s.aim_total=total
 	s.seed=time()+roll_num
 	srand(s.seed)
-	aim=total/3
+	aim=total/2
 	--note, no magic yet
-	s.patk=flr(rng(aim))
+	s.patk=abs(flr(rnd(aim)))
 	--s.matk=flr(rng(aim))
-	s.pspd=flr(rng(aim))
+	s.pspd=abs(flr(rnd(aim)))
 	--s.mspd=flr(rng(aim))
 	--s.mdef=flr(rng(aim))
-	s.pdef=flr(rng(aim))
-	s.ablt=flr(rng(aim))
-	s.spd=flr(rng(aim))
+	s.pdef=abs(flr(rnd(aim)))
+	s.ablt=abs(flr(rnd(aim)))
+	s.spd=abs(flr(rnd(aim)))
+	s.total=
+		s.patk+s.pspd+s.pdef+
+		s.ablt+s.spd
 end
 
 function sword_roll(total)
@@ -364,7 +395,10 @@ end
 
 
 slash_move={
-	name="(p) slash",
+	icon=23,
+	icon_disabled=24,
+	name="slash",
+	cost=50,
 	--gear,enemy
 	fn=
 	--source entity,enemy
@@ -373,7 +407,7 @@ function(se,e)
 	play_anim({16,16,17,17,18},
 		e.x,e.y)
 		apply_dmg(e,
-			2*(total_patk(se)/5))
+			2*(se.patk/5))
 end,
 	range=10,
 	--target count
@@ -393,11 +427,17 @@ sword_wpn={
 
 
 function apply_dmg(e,d)
-	play_text("-"..d,10,e.x-4,
+	play_text("-"..flr(d),10,e.x-4,
 		e.y-8,9)
 	e.health-=d
 end
 
+function calc_attributes(e)
+	e.eng_rate=0.5+(e.pspd*0.05)
+	e.clr_rate=0.5+(e.pdef*0.05)
+	e.max_eng=50+(e.spd*2)
+	e.clr_max=50+(e.ablt*2)
+end
 
 -->8
 --combat
@@ -415,6 +455,8 @@ function setup_combat()
 	p1.x=8
 	p1.y=72
 	p1.moved=false
+	roll_stats(p1,20)
+	calc_attributes(p1)
 	for e in all(entities) do
 		if tb_same_pos(p1,e)
 		then
@@ -439,11 +481,19 @@ function combat_mode()
 	c_draw_enemies()
 	
 	c_player_control()
-	
+	for e in all(enemies) do
+		c_enemy_control(e)
+	end
 	c_clean_enemies()
 	if #enemies==0 then
 		--battle done!
 		trigger_dungeon()
+	end
+	
+	if p1.eng < p1.max_eng then
+		p1.eng+=p1.eng_rate
+	else
+		p1.eng=p1.max_eng
 	end
 end
 
@@ -456,6 +506,10 @@ function c_clean_enemies()
 	end
 end
 
+function c_enemy_control(e)
+	if anim_c%30==0 then
+	end
+end
 function c_player_control()
 	xold=p1.x
 	yold=p1.y
@@ -499,6 +553,9 @@ end
 
 function use_primary()
 	p=p1.p_mv
+	if p.cost>p1.eng then
+		return
+	end
 	cnt=p.t_cnt
 	for e in all(enemies) do
 		if cnt<=0 then
@@ -509,15 +566,27 @@ function use_primary()
 		if xd<p.range and
 				yd<p.range then
 				cnt+=1
-			p.fn(p1.p_g,e)
+			p.fn(p1,e)
 		end
 	end
+
+	p1.eng-=p.cost
 end
 
-function total_patk(e)
-	return 10
+function recalc_stats(e)
+	e.patk=0
+	e.pspd=0
+	e.pdef=0
+	e.ablt=0
+	e.spd=0
+	for t in all(equips) do
+		e.patk+=t.patk
+		e.pspd+=t.pspd
+		e.pdef+=t.pdef
+		e.ablt+=t.ablt
+		e.spd+=t.spd
+	end
 end
-
 
 
 --last edge colliding on 
@@ -591,15 +660,87 @@ function c_draw_enemies()
 	end
 end
 
+bullets={}
+--produces a circular array
+--of bullets
+function do_bounce_act()
+	
+end
+
+function c_bullets_control()
+	--ang=atan2(xd,yd)
+	b.x-=b.speed*cos(ang)
+	b.y-=b.speed*sin(ang)	
+	return b	
+end
 -->8
 --hud and parry
 
 function draw_hud()
-	rectfill(0,0,128,12,5)
+	rectfill(0,0,128,12,0)
 	color(7)
-	print("❎:",2,4)
+	print("❎:",2,5,7)
+	rect(13,2,22,11,6)
+	s=p1.p_mv.icon
+	if p1.p_mv.cost > p1.eng then
+		s=p1.p_mv.icon_disabled
+	end
+	spr(s,14,3)
+	--c=flr(p1.eng/m*10)/10
+	--if c==0 then
+	--	print("x"..c,24,5,8)
+	--else
+	--	print("x"..c,24,5,7)
+	--end
+	print("🅾️:",40,4,7)
 	
+	
+	
+	--p1.strat=true
+	if p1.strat then
+		rectfill(109,3,121,9,12)
+		print("str",110,4,10)
+	else
+		rectfill(109,3,121,9,0)
+		print("atk",110,4,11)
+	end
 end
+
+function meter(v,mx,x,y,col)
+	x1=x
+	x2=x+12
+	y1=y
+	y2=y+5
+	--black box
+	rectfill(x1,y1,x2,y2,5)
+	--draw bar
+	o=12.0*((v+.0)/mx)
+	rectfill(
+		x,y,
+		x+o,
+		y+5,
+		col)
+end
+
+--this meter is used on
+--moves and action icons
+--todo!
+function icn_meter(v,mx,x,y,col)
+	x1=x
+	x2=x+12
+	y1=y
+	y2=y+5
+	--black box
+	--rectfill(x1,y1,x2,y2,5)
+	--draw bar
+	o=12.0*((v+.0)/mx)
+	rectfill(
+		x,y,
+		x+o,
+		y+5,
+		col)
+end
+
 
 
 function do_parry()
@@ -617,14 +758,14 @@ __gfx__
 007007007751577777515777775157777751577777717777777bb77777bb77777700077777000777770007777700077777707777004444000000000000000000
 00000000775757777757577777575777775757777757577777777777777777777707077777070777770707777707077777070777000440000000000000000000
 00000000775757777777577777777777775777777757577777777777777777777707077777770777777777777707777777070777000440000000000000000000
-7c7777777c17777771c7777777777777777777777777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-7cc777777cc17777711c777797777777777999977777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-77cc777777cc17777711c7779777777777799a977777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c77977777777799a9977777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c7797777777799a99977777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c779777777779a997777777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
-77cc777777cc17777711c77797777777799777779999999700000000000000000000000000000000000000000000000000000000000000000000000000000000
-7cc777777cc17777711c777797777777777777777777777700000000000000000000000000000000000000000000000000000000000000000000000000000000
+7c7777777c17777771c77777777777777777777777777777000000000c1000000650000000000000000000000000000000000000000000000000000000000000
+7cc777777cc17777711c7777977777777779999777777777000000000cc100000665000000000000000000000000000000000000000000000000000000000000
+77cc777777cc17777711c7779777777777799a9777777777000aa00000cc10000066500000000000000000000000000000000000000000000000000000000000
+777cc777777cc17777711c77977777777799a9977777777700a99a00000cc1000006650000000000000000000000000000000000000000000000000000000000
+777cc777777cc17777711c7797777777799a99977777777700a99a00000cc1000006650000000000000000000000000000000000000000000000000000000000
+777cc777777cc17777711c779777777779a9977777777777000aa000000cc1000006650000000000000000000000000000000000000000000000000000000000
+77cc777777cc17777711c7779777777779977777999999970000000000cc10000066500000000000000000000000000000000000000000000000000000000000
+7cc777777cc17777711c7777977777777777777777777777000000000cc100000665000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

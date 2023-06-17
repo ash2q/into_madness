@@ -26,7 +26,8 @@ The hud displays several things.
 * The status etc of your secondary attack weapon
 * The charge status of your ability
 * The sanity meter
-* The charge status of using an action
+* The charge status of using an action (ACT)
+* The charge status of using a move (MOV)
 
 ## Equips, Moves, and Actions
 
@@ -36,9 +37,15 @@ Moves are moderated by PSPD or MSPD, depending on if the equip for that button p
 
 The controller layout during combat is planned as so:
 
-* X -- primary attack
-* Z -- menu (action)
-* Z+X -- secondary attack
+* X -- primary move
+* Z -- secondary move
+* Z+X -- flip to strat mode
+
+When in strat mode, the controls are as so:
+
+* X -- primary move (not necessarily the same action as the other mode)
+* Z -- action menu
+* Z+X -- flip to attack mode
 
 In the menu
 
@@ -55,8 +62,8 @@ If the same action is provided from multiple pieces of gear, the action is impro
 
 ## Parry
 
-There is a unique parry mechanic. It is basically a guage which starts slow and then speeds up, and the idea is to get the gauuge to be within a certain precise point near the end. A successful parry will result in a percentage of damage being reflected back at the enemy, taking no damage yourself, and the parried attack doesn't consume a move charge. 
+There is a unique parry mechanic. It is triggered by using your primary attack at the exact time a bullet hits the player. If the parry is successful then your primary move is recharged, you take no damage, and the enemy which did the attack takes some damage. If the parry was attempted but unsuccessful (too slow or too fast) then the move charge is consumed and damage taken is increased. Parrying is only an available option if you have a move charge
 
-Parrying has an effect on sanity.
+Failing a parry has an effect on sanity.
 
 
