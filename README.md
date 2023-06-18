@@ -62,8 +62,8 @@ If the same action is provided from multiple pieces of gear, the action is impro
 
 ## Parry
 
-There is a unique parry mechanic. It is triggered by using your primary attack at the exact time a bullet hits the player. If the parry is successful then your primary move is recharged, you take no damage, and the enemy which did the attack takes some damage. If the parry was attempted but unsuccessful (too slow or too fast) then the move charge is consumed and damage taken is increased. Parrying is only an available option if you have a move charge
+There is a unique parry mechanic. It is triggered by using your primary attack at the exact time a bullet hits the player. If the parry is successful then your primary move is recharged, you take no damage for several seconds, and the enemy which did the attack takes some damage. If the parry was attempted but unsuccessful (too slow or too fast) then the move charge is consumed and damage taken is increased. Parrying is only an available option if you have a move you can use (enough energy). 
 
-Failing a parry has an effect on sanity.
+Failing a parry has an effect on sanity. Enemies can also parry attacks from the player, using the luck stat. When the player's attack is parried the amount of damage the attack would've done is returned to the player as damage. Most enemies are expected to have very low luck stats so that this is very improbable, but certain side bosses may require the player going against a lucky advesary. The specific strategy best would be to have good attacks but not too good that could one-shot the player.
 
 

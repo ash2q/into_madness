@@ -174,6 +174,7 @@ function draw_grid()
 end
 
 
+
 function tb_controls()
 	if btnp()==0 then
 
@@ -271,10 +272,27 @@ function play_text(t,l,x,y,col)
 		l=l, --length
 		x=x,
 		y=y,
-		col=col
+		col=col,
+		float=false
 	}
 	add(atexts,text)
 end
+function play_float_text(t,l,x,y,col)
+	text={
+		t=t,
+		l=l, --length
+		x=x,
+		y=y,
+		col=col,
+		float=true
+	}
+	add(atexts,text)
+end
+function entity_text(e,txt,col)
+	play_float_text(txt,10,
+			e.x-4,e.y-6,col)
+end
+
 
 function play_short_frame(s)
 	c=flr(anim_c/s.div)
@@ -288,6 +306,9 @@ function play_short_frame(s)
 end
 
 function play_atext_frame(s)
+	if s.float then
+		s.y-=0.75
+	end
 	print(s.t,s.x,s.y,s.col)
 	s.l-=1
 	spr(s.anim,s.x,s.y,s.w,s.h)
@@ -479,7 +500,8 @@ function init_tb_enemies()
 		--clarity(actions)
 		clr=0,
 		max_clr=0,
-		clr_rate=0
+		clr_rate=0,
+		ai=slime_ai
 	}
 end
 
@@ -554,12 +576,12 @@ function(se,e)
 --	play_anim({19,19,19,20,20,21,21},
 	play_anim({16,16,17,17,18},
 		e.x,e.y)
-		apply_dmg(e,
-			2*(se.patk/5))
+	apply_dmg(e,2*(se.patk/5))
+	return true
 end,
 	range=10,
 	--target count
-	t_cnt=1
+	target_count=1
 }
 
 sword_wpn={
@@ -575,7 +597,7 @@ sword_wpn={
 
 
 function apply_dmg(e,d)
-	play_text("-"..flr(d),10,e.x-4,
+	play_float_text("-"..flr(d),10,e.x-4,
 		e.y-8,9)
 	e.health-=d
 end
@@ -602,7 +624,7 @@ end
 
 function setup_combat()
 	p1.x=8
-	p1.y=72
+	p1.y=100
 	p1.moved=false
 	--p1.moves={slash_move}
 	p1.x_move_atk=p1.moves[1]
@@ -617,12 +639,12 @@ function setup_combat()
 			add(enemies,e)
 		end
 	end
-	y=24
+	y=80
 	for e in all(enemies) do
-		e.x=80
+		e.x=70
 		e.y=y
 		e.moved=false
-		y+=12
+		y+=20
 	end
 end
 
@@ -630,6 +652,7 @@ function combat_mode()
 	cls(6)
 	palt(0,false)
 	palt(7,true)
+	--draw_backdrop()
 	draw_hud()
 	c_draw_player()
 	c_draw_enemies()
@@ -672,7 +695,7 @@ function c_clean_enemies()
 end
 
 function c_enemy_control(e)
-
+	e.ai(e)
 end
 
 function c_player_control()
@@ -731,8 +754,9 @@ function use_move(ent,move)
 	if p.cost>ent.eng then
 		return
 	end
-	cnt=p.t_cnt
+	cnt=p.target_count
 	assert(cnt>0)
+	hits=0
 	for e in all(enemies) do
 		if cnt<=0 then
 			break
@@ -744,10 +768,16 @@ function use_move(ent,move)
 			cnt+=1
 			--source is entity using the
 			--move
-			p.fn(ent,e)
+			if p.fn(ent,e) then
+				hits+=1
+			end
 		end
 	end
 	ent.eng-=p.cost
+	if hits==0 then
+		play_float_text("miss",10,
+			ent.x-4,ent.y-6,8)
+	end
 end
 
 function use_act(ent,act)
@@ -894,6 +924,22 @@ function c_bullets_control()
 	b.y-=b.speed*sin(ang)	
 	return b	
 end
+
+function draw_backdrop()
+	sz=32
+	--draw grid lines
+	--horizontal
+	for i=0,(64/sz) do
+		line(0,i*sz,128,i*sz,5)
+	end
+	--vertical
+	i=0
+	for i=0,(64/4) do
+		line(i*sz,0,i*sz,64,5)
+	end
+	
+	line(0,68,128,68,5)
+end
 -->8
 --hud and parry
 
@@ -902,9 +948,9 @@ function draw_hud()
 	color(7)
 	print("❎:",2,5,7)
 	palt(0,true)
-	rect(13,2,22,11,6)
+	rect(14,2,22,11,6)
 	if p1.eng >= p1.max_eng then
-		rectfill(14,3,21,10,3)
+		rectfill(15,3,21,10,3)
 	end
 	m=nil
 	if p1.atk_mode then
@@ -917,7 +963,7 @@ function draw_hud()
 		if m.cost>p1.eng then
 			s=m.icon_disabled
 		end
-		spr(s,14,3)
+		spr(s,15,3)
 	end
 	palt(0,false)
 	print("🅾️:",40,4,7)
@@ -978,6 +1024,22 @@ end
 function draw_parry_hud()
 	
 end
+-->8
+--enemy ai
+
+--source entity,entity
+function target(se,e)
+
+end
+
+function slime_ai(e)
+	if e.eng>40 then
+		entity_text(e,"!")
+	end
+	rnd(
+end
+
+
 __gfx__
 00000000777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000060000000000000000000
 00000000772227777722277777222777772227777777777777777777777777777700077777000777770007777700077777777777000660000000000000000000
