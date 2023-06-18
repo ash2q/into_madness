@@ -25,24 +25,24 @@ state=game_state.dungeon
 
 
 slot_num={
-	primary=1,
-	secondary=2,
-	helmet=3,
-	chestplate=4,
-	pants=5,
-	boots=6,
-	necklace=7,
-	intrinsic=8
+	intrinsic=1,
+	primary=2,
+	secondary=3,
+	helmet=4,
+	chestplate=5,
+	pants=6,
+	boots=7,
+	necklace=8
 }
 slot_names={  --slots:
-	"primary",   --1
-	"secondary", --2
-	"helmet",    --3
-	"chestplate",--4
-	"pants",     --5
-	"boots",     --6
-	"necklace",   --7
-	"intrinsic"  --8
+	"intrinsic", --1
+	"primary",   --2
+	"secondary", --3
+	"helmet",    --4
+	"chestplate",--5
+	"pants",     --6
+	"boots",     --7
+	"necklace"   --8
 }
 
 --animation helpers
@@ -65,11 +65,13 @@ end
 
 function _init()
 	printh("--init--")
+	init_gear()
 	init_tb_enemies()
+	init_gear_slots(p1)
 	tb_spawn_slime(4*16,6*16)
 	sword=gen_sword(20)
 	equip(p1,sword)
-	rebuild_entity(p1)
+	rebuild_player(p1)
 end
 
 function _update()
@@ -321,12 +323,18 @@ end
 
 function equip(ent,g)
 	s=g.slot
+	assert(s!=nil)
 	assert(s<=#slot_names)
-	unequip(ent,s)
+	--unequip(ent,s)
+	assert(g!=nil)
+	printh("ec:"..#g.moves)
 	ent.gear[s]=g
 end
 
 function unequip(ent,slot)
+	if ent.gear==nil then
+		return
+	end
 	ent.gear[slot]=nil
 end
 
@@ -351,6 +359,8 @@ function rebuild_lists(ent)
 	ent.moves={}
 	ent.actions={}
 	for g in all(ent.gear) do
+		assert(g.moves!=nil)
+		printh("c: "..#g.moves)
 		for m in all(g.moves) do
 			if not contains(
 					ent.moves,m)
@@ -374,6 +384,10 @@ function rebuild_entity(e)
 	calc_stats(e)
 	calc_attributes(e)
 	rebuild_lists(e)
+end
+
+function rebuild_player(e)
+	rebuild_entity(e)
 	if e.x_move_atk!=nil and
 			not contains(
 				e.moves,e.x_move_atk) 
@@ -416,6 +430,11 @@ function print_table(msg,g)
 	end
 end
 
+function init_gear_slots(e)
+	while #e.gear<8 do
+		add(e.gear,empty_gear)
+	end
+end
 -->8
 --specs,defs,spawns
 
@@ -469,6 +488,18 @@ int_warrior={
 	luck=1,
 }
 
+empty_gear={
+	slot=nil, --on purpose
+	patk=0,
+	pspd=0,
+	pdef=0,
+	ablt=0,
+	wspd=0,
+	luck=0,
+	moves={},
+	actions={}
+}
+
 
 
 --moves is what can be done
@@ -501,7 +532,11 @@ function init_tb_enemies()
 		clr=0,
 		max_clr=0,
 		clr_rate=0,
-		ai=slime_ai
+		ai=slime_ai,
+		--populated by equips
+		moves={},
+		actions={},
+		gear={},
 	}
 end
 
@@ -519,6 +554,34 @@ function init_actions()
 	}
 end
 
+int_slime=nil
+pri_sword=nil
+
+function init_gear()
+	init_moves()
+	int_slime={
+		slot=slot_num.intrinsic,
+		patk=10,
+		pspd=5,
+		pdef=1,
+		ablt=5,
+		wspd=1,
+		luck=1,
+		moves={slash_move},
+		actions={}
+	}
+	pri_sword={
+		icon=13,
+		slot=slot_num.primary,
+		name="sword",
+		desc=
+"a modern sword. nothing\n"..
+"special honestly, but feels good\n"..
+"in your hand",
+		moves={slash_move},
+		actions={}
+	}
+end
 
 
 function tb_spawn_slime(x,y)
@@ -528,6 +591,11 @@ function tb_spawn_slime(x,y)
 		--tb_anim={6,7}
 	}
 	copy_into(e,e_slime)
+	init_gear_slots(e)
+	equip(e,int_slime)
+	printh("before rebuild")
+	rebuild_entity(e)
+	printh("after rebuild")
 	tb_add_entity(e)
 end
 
@@ -556,14 +624,13 @@ end
 
 function gen_sword(total)
 	s={}
-	copy_into(s,sword_wpn)
+	copy_into(s,pri_sword)
 	roll_stats(s,total)
 	return s
 end
 
-
-
-
+slash_move=nil
+function init_moves()
 slash_move={
 	icon=23,
 	icon_disabled=24,
@@ -584,16 +651,13 @@ end,
 	target_count=1
 }
 
-sword_wpn={
-	icon=13,
-	slot=slot_num.primary,
-	name="sword",
-	desc="a modern sword. nothing\n"..
-	"special honestly, but feels good\n"..
-	"in your hand",
-	moves={slash_move},
-	actions={}
-}
+end
+
+
+
+
+
+
 
 
 function apply_dmg(e,d)
@@ -656,7 +720,10 @@ function combat_mode()
 	draw_hud()
 	c_draw_player()
 	c_draw_enemies()
-	
+	if in_parry then
+		c_parry()
+		return
+	end
 	c_player_control()
 	for e in all(enemies) do
 		c_enemy_control(e)
@@ -1025,18 +1092,44 @@ function draw_parry_hud()
 	
 end
 -->8
---enemy ai
+--parry and enemy ai
+
+function c_parry()
+	rectfill(32,32,96,48,0)
+end
 
 --source entity,entity
-function target(se,e)
-
+function draw_target(e,l)
+	if l%6<2 then
+		circ(e.x,e.y,8,8)
+	end
 end
 
 function slime_ai(e)
+	if e.eng<40 then return end
 	if e.eng>40 then
 		entity_text(e,"!")
 	end
-	rnd(
+	if e.targeting==nil then
+		e.targeting=50
+		e.target=p1
+	end
+	e.targeting-=1
+	draw_target(p1,e.targeting)
+	if e.targeting>0 then return end
+	if btn(4) and btn(5) then
+		--parry
+		parry_move=e.moves[1]
+		printh("m: "..#e.moves)
+		assert(parry_move!=nil)
+		parry_p=p1
+		parry_se=e
+		in_parry=true
+		
+	else
+		--not parry
+	end
+	
 end
 
 
