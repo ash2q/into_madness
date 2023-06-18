@@ -447,12 +447,13 @@ p1={
 	tb_anim={64,64,72,72},
 	tb_spr_size=2,
 	--tb_mv_anim={64,66,68,70},
-	tb_x=0,
-	tb_y=0,
+	tb_x=16*3,
+	tb_y=16,
 	
 	c_anim={8,9,10,11},
 	c_idle_anim={8,8,12,12},
 	c_sz=0.75,
+	health=50,
 	--energy and clarity
 	eng=0,
 	max_eng=0,
@@ -639,11 +640,11 @@ slash_move={
 	--gear,enemy
 	fn=
 	--source entity,enemy
-function(se,e)
+function(m,se,e)
 --	play_anim({19,19,19,20,20,21,21},
 	play_anim({16,16,17,17,18},
 		e.x,e.y)
-	apply_dmg(e,2*(se.patk/5))
+	apply_dmg(se,e,2*(se.patk/5))
 	return true
 end,
 	range=10,
@@ -655,15 +656,21 @@ end
 
 
 
-
-
-
-
-
-function apply_dmg(e,d)
+dmg_mul=1.0
+ret_dmg_mul=0.0
+function apply_dmg(se,e,d)
+	if ret_dmg_mul>0 then
+		d2=d*ret_dmg_mul
+		play_float_text("-"..flr(d2),10,se.x-4,
+		se.y-8,9)
+		se.health-=d2
+	end
+	d*=dmg_mul
 	play_float_text("-"..flr(d),10,e.x-4,
 		e.y-8,9)
 	e.health-=d
+	dmg_mul=1.0
+	ret_dmg_mul=0.0
 end
 
 function calc_attributes(e)
@@ -688,7 +695,7 @@ end
 
 function setup_combat()
 	p1.x=8
-	p1.y=100
+	p1.y=70
 	p1.moved=false
 	--p1.moves={slash_move}
 	p1.x_move_atk=p1.moves[1]
@@ -765,7 +772,9 @@ function c_enemy_control(e)
 	e.ai(e)
 end
 
+
 function c_player_control()
+	x_used=false
 	xold=p1.x
 	yold=p1.y
 	yvel=0
@@ -788,7 +797,7 @@ function c_player_control()
 	end
 	if btnp(5) then
 		--primary
-		p1_x_move()
+		p_x_move()
 		--play_text("miss!",10,
 		--	p1.x-2,p1.y-8,0)
 	end
@@ -806,21 +815,66 @@ function c_player_control()
 	p1.y+=yvel
 end
 
+function p_x_filled(p)
+	m=p.x_move_act
+	assert(m!=nil)
+	if p.atk_mode then
+		m=p.x_move_atk
+	end
+	if m==nil then return false end
+	if m.cost>e.eng then
+		return false
+	end
+	return true
+end
+
+
+
 --only for player
-function p1_x_move()
+function p_x_move()
 	m=p1.x_move_act
 	if p1.atk_mode then
 		m=p1.x_move_atk
 	end
-	return use_move(p1,m)
+	return p_use_move(p1,m)
 end
 
-function use_move(ent,move)
+function enemy_use_move(e,p,mv)
+	if mv==nil then return end
+	if mv.cost>e.eng then
+		return
+	end
+	cnt=mv.target_count
+	assert(cnt>0)
+	hits=0
+	xd=abs(e.x-p.x)
+	yd=abs(e.y-p.y)
+	if xd<mv.range and
+			yd<mv.range then
+	cnt+=1
+		--source is entity using the
+		--move
+		if mv.fn(mv,e,p) then
+			hits+=1
+		end
+	end
+	e.eng-=mv.cost
+	if hits==0 then
+		play_float_text("miss",10,
+			e.x-4,e.y-6,8)
+	end
+end
+
+x_used=false
+
+function p_use_move(ent,move)
+	x_used=false
 	p=move
 	if p==nil then return end
 	if p.cost>ent.eng then
 		return
 	end
+	x_used=true
 	cnt=p.target_count
 	assert(cnt>0)
 	hits=0
@@ -835,7 +889,7 @@ function use_move(ent,move)
 			cnt+=1
 			--source is entity using the
 			--move
-			if p.fn(ent,e) then
+			if p.fn(p,ent,e) then
 				hits+=1
 			end
 		end
@@ -863,7 +917,7 @@ function use_act(ent,act)
 		if xd<p.range and
 				yd<p.range then
 			cnt+=1
-			p.fn(e,ent)
+			p.fn(p,e,ent)
 		end
 	end
 	ent.eng-=p.cost
@@ -1035,9 +1089,6 @@ function draw_hud()
 	palt(0,false)
 	print("🅾️:",40,4,7)
 	
-	
-	
-	
 	--p1.strat=true
 	if p1.atk_mode then
 		rectfill(109,3,121,9,0)
@@ -1046,6 +1097,13 @@ function draw_hud()
 		rectfill(109,3,121,9,12)
 		print("act",110,4,10)
 	end
+	
+	draw_log()
+end
+
+function draw_log()
+	rect(0,99,127,127,7)
+	rectfill(1,100,126,126,0)
 end
 
 function meter(v,mx,x,y,col)
@@ -1121,7 +1179,10 @@ block_len=3
 unlucky_len=8
 --(end ordered)
 parry_speed=1.5
-parry_delay=nil
+show_delay=nil
+parry_e=nil
+parry_se=nil
+parry_move=nil
 function c_parry()
 	rectfill(16,16,112,32,0)
 	if anim_c%4<2 or 
@@ -1133,7 +1194,8 @@ function c_parry()
 	if parry_state==parry.begin then
 		if not btn(5) then
 			parry_state=parry.ready
-			parry_delay=4
+			show_delay=10
+			parry_cur=0
 		end
 		return
 	end
@@ -1143,8 +1205,19 @@ function c_parry()
 	if parry_state==parry.ready then
 		if btnp(5) then
 			parry_state=parry.sliding
-			lucky_parry=rnd(60)+20
-			parry_cur=0
+			lucky_parry=rnd(40)+20
+			xd=flr(abs(parry_se.x-parry_e.x))
+			yd=flr(abs(parry_se.y-parry_e.y))
+			xd=min(xd,35)
+			xd=min(yd,35)
+			--d=flr(xd+yd)
+			--todo unsure why this being
+			--dynamic doesn't work
+			d=30
+			
+			--printh("diff: "..d)
+			--assert(false)
+			lucky_parry=d+20
 		end
 		return
 	end
@@ -1199,29 +1272,42 @@ function c_parry()
 			lucky_parry+lucky_len
 		then
 		msg="lucky!"
+		ret_dmg_mul=3.0
+		dmg_mul=0.0
 		--stop()
 	elseif parry_cur<=
 			lucky_parry+parry_len+lucky_len
 		then
 		msg="parry!"
+		ret_dmg_mul=1.0
+		dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+dodge_len+parry_len+lucky_len
 		then
 		msg="dodge!"
+		ret_dmg_mul=0.0
+		dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+block_len+parry_len+dodge_len+lucky_len
 		then
 		msg="block!"
+		dmg_mul=1.5
 	elseif parry_cur<=
 		lucky_parry+unlucky_len+parry_len+block_len+dodge_len+lucky_len
 		then
 		msg="unlucky!"
+		dmg_mul=3.0
 	else
 		msg="nothing."
+		dmg_mul=1.0
 	end
-	
 	print(msg,32,22,7) 
-		
+	show_delay-=1
+	if show_delay<=0 then
+		parry_state=parry.done
+		m=parry_move
+		m.fn(m,parry_se,parry_e)
+	end
 end
 
 
@@ -1232,30 +1318,41 @@ function draw_target(e,l)
 	end
 end
 
+targeting_frames=14
 function slime_ai(e)
 	if e.eng<40 then return end
-	if e.eng>40 then
-		entity_text(e,"!")
+	av_moves={}
+	for mv in all(e.moves) do
+		if e.eng>=mv.cost then
+			add(av_moves,mv)
+		end
 	end
+	if #av_moves==0 then return end
 	if e.targeting==nil then
-		e.targeting=50
+		e.targeting=targeting_frames
 		e.target=p1
 	end
 	e.targeting-=1
 	draw_target(p1,e.targeting)
-	if e.targeting>0 then return end
-	if btn(4) and btn(5) then
+	if not x_used then
+		if e.targeting>0 then return end
+	else
+		--❎ was used
+		e.targeting=nil
+	end
+	if x_used then
 		--parry
-		parry_move=e.moves[1]
-		printh("m: "..#e.moves)
-		assert(parry_move!=nil)
-		parry_p=p1
+		parry_move=av_moves[1]
+		parry_e=p1
 		parry_se=e
 		parry_state=parry.begin
-		
 	else
+		m=av_moves[flr(rnd(#av_moves))+1]
+		enemy_use_move(e,p1,m)
+		--m.fn(m,e,p1)
 		--not parry
 	end
+	e.targeting=nil
 	
 end
 
