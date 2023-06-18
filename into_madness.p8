@@ -22,6 +22,29 @@ game_state={
 }
 anim_c=0
 state=game_state.dungeon
+
+
+slot_num={
+	primary=1,
+	secondary=2,
+	helmet=3,
+	chestplate=4,
+	pants=5,
+	boots=6,
+	necklace=7,
+	intrinsic=8
+}
+slot_names={  --slots:
+	"primary",   --1
+	"secondary", --2
+	"helmet",    --3
+	"chestplate",--4
+	"pants",     --5
+	"boots",     --6
+	"necklace",   --7
+	"intrinsic"  --8
+}
+
 --animation helpers
 shorts={}
 atexts={}
@@ -31,16 +54,22 @@ function copy_into(dest,source)
 		dest[k]=v
 	end
 end
-
-function equip_p_mv(g)
-	p1.p_mv=g
+function contains(t,v)
+	for tmp in all(t) do
+		if tmp==v then
+			return true
+		end
+	end
+	return false
 end
 
 function _init()
 	printh("--init--")
 	init_tb_enemies()
 	tb_spawn_slime(4*16,6*16)
-	equip_p_mv(slash_move)
+	sword=gen_sword(20)
+	equip(p1,sword)
+	rebuild_entity(p1)
 end
 
 function _update()
@@ -267,6 +296,105 @@ end
 function trigger_dungeon()
 	state=game_state.dungeon
 end
+
+
+function equip(ent,g)
+	s=g.slot
+	assert(s<=#slot_names)
+	unequip(ent,s)
+	ent.gear[s]=g
+end
+
+function unequip(ent,slot)
+	ent.gear[slot]=nil
+end
+
+function calc_stats(ent)
+	ent.patk=0
+	ent.pspd=0
+	ent.pdef=0
+	ent.ablt=0
+	ent.wspd=0
+	ent.luck=0
+	for g in all(ent.gear) do
+		ent.patk+=g.patk
+		ent.pspd+=g.pspd
+		ent.pdef+=g.pdef
+		ent.ablt+=g.ablt
+		ent.wspd+=g.wspd
+		ent.luck+=g.luck
+	end
+end
+
+function rebuild_lists(ent)
+	ent.moves={}
+	ent.actions={}
+	for g in all(ent.gear) do
+		for m in all(g.moves) do
+			if not contains(
+					ent.moves,m)
+				then
+				add(ent.moves,m)
+			end
+		end --for m
+		for a in all(g.actions) do
+			if not contains(
+					ent.actions,a)
+				then
+				add(ent.actions,a)
+			end
+		end --for a
+	end
+end
+
+function rebuild_entity(e)
+	e.eng=0
+	e.clr=0
+	calc_stats(e)
+	calc_attributes(e)
+	rebuild_lists(e)
+	if e.x_move_atk!=nil and
+			not contains(
+				e.moves,e.x_move_atk) 
+		then
+		--if #e.moves==0
+		e.x_move_atk=nil --e.m0ves[0]
+	end
+	if e.x_move_act!=nil and
+			not contains(
+				e.moves,e.x_move_act) 
+		then
+		e.x_move_act=nil --e.moves[0]
+	end
+	if e.z_action!=nil and
+			not contains(
+				e.moves,e.z_action) 
+		then
+		e.z_action=nil
+	end
+end
+
+function print_table(msg,g)
+	printh(msg)
+	for k,v in pairs(g) do
+		if type(v) == "table" then
+			print_table(""..k..":{",v)
+			printh("}")
+		elseif type(v)=="boolean" then
+				if v then
+					printh(""..k.."=true")
+				else
+					printh(""..k.."=false")
+				end
+		else
+			if type(v)=="function" then
+				v="["..type(v).."]"
+			end
+			printh(""..k.."="..v)
+		end
+	end
+end
+
 -->8
 --specs,defs,spawns
 
@@ -277,7 +405,6 @@ entities={}
 p1={
 	enemy=false,
 	tb_anim={64,64,72,72},
-
 	tb_spr_size=2,
 	--tb_mv_anim={64,66,68,70},
 	tb_x=0,
@@ -286,10 +413,7 @@ p1={
 	c_anim={8,9,10,11},
 	c_idle_anim={8,8,12,12},
 	c_sz=0.75,
-	p_mv={},
-	s_mv={},
-	actions={},
-	equips={},
+	--energy and clarity
 	eng=0,
 	max_eng=0,
 	eng_rate=0.5,
@@ -297,10 +421,32 @@ p1={
 	clr_rate=0,
 	max_clr=0,
 	clr_rate=0.5,
-	sanity=100
+	sanity=100,
+	--invincibility
+	inv_max=60,
+	inv_count=0,
+	--populated by equips
+	moves={},
+	actions={},
+	gear={},
+	--mapped to ❎ in atk mode
+	x_move_atk={},
+	--mapped to ❎ in act mode
+	x_move_act={},
+	--mapped to 🅾️ in act mode
+	z_action={},
+	atk_mode=true
 }
 
-
+int_warrior={
+	slot=slot_num.intrinsic,
+	patk=10,
+	pspd=1,
+	pdef=1,
+	ablt=1,
+	wspd=5,
+	luck=1,
+}
 
 
 
@@ -379,16 +525,18 @@ function roll_stats(s,total)
 	--s.mdef=flr(rng(aim))
 	s.pdef=abs(flr(rnd(aim)))
 	s.ablt=abs(flr(rnd(aim)))
-	s.spd=abs(flr(rnd(aim)))
+	s.wspd=abs(flr(rnd(aim)))
+	s.luck=abs(flr(rnd(aim)))
 	s.total=
 		s.patk+s.pspd+s.pdef+
-		s.ablt+s.spd
+		s.ablt+s.wspd
 end
 
-function sword_roll(total)
+function gen_sword(total)
 	s={}
 	copy_into(s,sword_wpn)
 	roll_stats(s,total)
+	return s
 end
 
 
@@ -398,7 +546,7 @@ slash_move={
 	icon=23,
 	icon_disabled=24,
 	name="slash",
-	cost=50,
+	cost=40,
 	--gear,enemy
 	fn=
 	--source entity,enemy
@@ -416,11 +564,11 @@ end,
 
 sword_wpn={
 	icon=13,
-	name="military sword",
+	slot=slot_num.primary,
+	name="sword",
 	desc="a modern sword. nothing\n"..
 	"special honestly, but feels good\n"..
 	"in your hand",
-	roll=sword_roll,
 	moves={slash_move},
 	actions={}
 }
@@ -435,8 +583,9 @@ end
 function calc_attributes(e)
 	e.eng_rate=0.5+(e.pspd*0.05)
 	e.clr_rate=0.5+(e.pdef*0.05)
-	e.max_eng=50+(e.spd*2)
+	e.max_eng=50+(e.wspd*2)
 	e.clr_max=50+(e.ablt*2)
+	e.speed=0.5+(e.wspd/10)
 end
 
 -->8
@@ -455,8 +604,13 @@ function setup_combat()
 	p1.x=8
 	p1.y=72
 	p1.moved=false
-	roll_stats(p1,20)
-	calc_attributes(p1)
+	--p1.moves={slash_move}
+	p1.x_move_atk=p1.moves[1]
+	p1.x_move_act=p1.moves[1]
+	
+	--print_table("-----player 1-----"
+	--	,p1)
+	
 	for e in all(entities) do
 		if tb_same_pos(p1,e)
 		then
@@ -489,11 +643,22 @@ function combat_mode()
 		--battle done!
 		trigger_dungeon()
 	end
-	
-	if p1.eng < p1.max_eng then
-		p1.eng+=p1.eng_rate
+	track_charging(p1)
+	for e in all(enemies) do
+		track_charging(e)
+	end
+end
+
+function track_charging(e)
+	if e.eng < e.max_eng then
+		e.eng+=e.eng_rate
 	else
-		p1.eng=p1.max_eng
+		e.eng=e.max_eng
+	end
+	if e.clr < e.max_clr then
+		e.clr+=e.clr_rate
+	else
+		e.clr=e.max_clr
 	end
 end
 
@@ -507,25 +672,25 @@ function c_clean_enemies()
 end
 
 function c_enemy_control(e)
-	if anim_c%30==0 then
-	end
+
 end
+
 function c_player_control()
 	xold=p1.x
 	yold=p1.y
 	yvel=0
 	xvel=0
 	if btn(0) then
-		xvel=-1
+		xvel=-p1.speed
 	end
 	if btn(1) then
-		xvel=1
+		xvel=p1.speed
 	end
 	if btn(2) then
-		yvel=-1
+		yvel=-p1.speed
 	end
 	if btn(3) then
-		yvel=1
+		yvel=p1.speed
 	end
 	if btnp(4) then
 		--menu (actions)
@@ -533,7 +698,7 @@ function c_player_control()
 	end
 	if btnp(5) then
 		--primary
-		use_primary()
+		p1_x_move()
 		--play_text("miss!",10,
 		--	p1.x-2,p1.y-8,0)
 	end
@@ -551,9 +716,44 @@ function c_player_control()
 	p1.y+=yvel
 end
 
-function use_primary()
-	p=p1.p_mv
-	if p.cost>p1.eng then
+--only for player
+function p1_x_move()
+	m=p1.x_move_act
+	if p1.atk_mode then
+		m=p1.x_move_atk
+	end
+	return use_move(p1,m)
+end
+
+function use_move(ent,move)
+	p=move
+	if p==nil then return end
+	if p.cost>ent.eng then
+		return
+	end
+	cnt=p.t_cnt
+	assert(cnt>0)
+	for e in all(enemies) do
+		if cnt<=0 then
+			break
+		end
+		xd=abs(e.x-ent.x)
+		yd=abs(e.y-ent.y)
+		if xd<p.range and
+				yd<p.range then
+			cnt+=1
+			--source is entity using the
+			--move
+			p.fn(ent,e)
+		end
+	end
+	ent.eng-=p.cost
+end
+
+function use_act(ent,act)
+	p=act
+	if p==nil then return end
+	if p.cost>e.clr then
 		return
 	end
 	cnt=p.t_cnt
@@ -561,30 +761,30 @@ function use_primary()
 		if cnt<=0 then
 			return
 		end
-		xd=abs(p1.x-e.x)
-		yd=abs(p1.y-e.y)
+		xd=abs(e.x-ent.x)
+		yd=abs(e.y-ent.y)
 		if xd<p.range and
 				yd<p.range then
-				cnt+=1
-			p.fn(p1,e)
+			cnt+=1
+			p.fn(e,ent)
 		end
 	end
-
-	p1.eng-=p.cost
+	ent.eng-=p.cost
 end
+
 
 function recalc_stats(e)
 	e.patk=0
 	e.pspd=0
 	e.pdef=0
 	e.ablt=0
-	e.spd=0
+	e.wspd=0
 	for t in all(equips) do
 		e.patk+=t.patk
 		e.pspd+=t.pspd
 		e.pdef+=t.pdef
 		e.ablt+=t.ablt
-		e.spd+=t.spd
+		e.wspd+=t.wspd
 	end
 end
 
@@ -664,7 +864,28 @@ bullets={}
 --produces a circular array
 --of bullets
 function do_bounce_act()
+	for ang=0,1.0,0.1 do
+		b.x-=b.speed*cos(ang)
+		b.y-=b.speed*sin(ang)
+	end
+end
+
+--follows a fixed line 
+--toward end position
+function step_line(b)
+	if b.xstart==nil then
+		b.xstart=b.x
+	end
+	if b.ystart==nil then
+		b.ystart=b.y
+	end
+	xd=b.xstart-b.xend
+	yd=b.ystart-b.yend
 	
+	ang=atan2(xd,yd)
+	b.x-=b.speed*cos(ang)
+	b.y-=b.speed*sin(ang)	
+	return b	
 end
 
 function c_bullets_control()
@@ -680,29 +901,37 @@ function draw_hud()
 	rectfill(0,0,128,12,0)
 	color(7)
 	print("❎:",2,5,7)
+	palt(0,true)
 	rect(13,2,22,11,6)
-	s=p1.p_mv.icon
-	if p1.p_mv.cost > p1.eng then
-		s=p1.p_mv.icon_disabled
+	if p1.eng >= p1.max_eng then
+		rectfill(14,3,21,10,3)
 	end
-	spr(s,14,3)
-	--c=flr(p1.eng/m*10)/10
-	--if c==0 then
-	--	print("x"..c,24,5,8)
-	--else
-	--	print("x"..c,24,5,7)
-	--end
+	m=nil
+	if p1.atk_mode then
+		m=p1.x_move_atk
+	else
+		m=p1.x_move_act
+	end
+	if m!=nil then
+		s=m.icon
+		if m.cost>p1.eng then
+			s=m.icon_disabled
+		end
+		spr(s,14,3)
+	end
+	palt(0,false)
 	print("🅾️:",40,4,7)
 	
 	
 	
+	
 	--p1.strat=true
-	if p1.strat then
-		rectfill(109,3,121,9,12)
-		print("str",110,4,10)
-	else
+	if p1.atk_mode then
 		rectfill(109,3,121,9,0)
 		print("atk",110,4,11)
+	else
+		rectfill(109,3,121,9,12)
+		print("act",110,4,10)
 	end
 end
 

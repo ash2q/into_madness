@@ -33,7 +33,7 @@ The hud displays several things.
 
 There's two different things that can be used in battle, moves and actions. 
 
-Moves are moderated by PSPD or MSPD, depending on if the equip for that button press is a (P) physical or (M)magical item. Moves are typically fairly fast to execute and recharge within a reasonable time as well. At first you can store up to 2 charges per physical item, or 1 charge per magical item. Your ability is only 1 charge. More charges can be added by high stat gear. Each multiple of 10 in MSPD or PSPD or ABLT increases the number of charges by 1, up to a maximum of 3.
+Moves are moderated by PSPD or MSPD, depending on if the equip for that button press is a (P) physical or (M)magical item. Moves are typically fairly fast to execute and recharge within a reasonable time as well. 
 
 The controller layout during combat is planned as so:
 
