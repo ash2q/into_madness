@@ -720,7 +720,7 @@ function combat_mode()
 	draw_hud()
 	c_draw_player()
 	c_draw_enemies()
-	if in_parry then
+	if parry_state!=parry.done then
 		c_parry()
 		return
 	end
@@ -1094,9 +1094,136 @@ end
 -->8
 --parry and enemy ai
 
+rainbow_col={
+	7,8,9,10,11,12,13,14
+}
+
+parry={
+	begin=1,
+	ready=2,
+	sliding=3,
+	show=4,
+	done=5,
+}
+parry_state=parry.done
+parry_reset=true
+parry_go=false
+--cursor
+parry_cur=0
+--where "lucky" region starts
+--(on x-axis)
+lucky_parry=0
+--order is important!
+lucky_len=2
+parry_len=2
+dodge_len=2
+block_len=3
+unlucky_len=8
+--(end ordered)
+parry_speed=1.5
+parry_delay=nil
 function c_parry()
-	rectfill(32,32,96,48,0)
+	rectfill(16,16,112,32,0)
+	if anim_c%4<2 or 
+			parry_state==parry.show then
+		print("❎",18,22,7)
+	else
+ 	print("❎",18,22,8)
+	end
+	if parry_state==parry.begin then
+		if not btn(5) then
+			parry_state=parry.ready
+			parry_delay=4
+		end
+		return
+	end
+	--width of about 70
+	rect(30,20,106,28,6)
+	
+	if parry_state==parry.ready then
+		if btnp(5) then
+			parry_state=parry.sliding
+			lucky_parry=rnd(60)+20
+			parry_cur=0
+		end
+		return
+	end
+	if parry_state==parry.sliding or
+			parry_state==parry.show
+		then
+		x1=30+lucky_parry
+		x2=x1+lucky_len
+		rectfill(x1,21,
+				x2,27,
+				rainbow_col[anim_c%#rainbow_col+1])
+		x1+=lucky_len
+		x2+=parry_len
+		rectfill(x1,21,x2,27,11)
+		x1+=parry_len
+		x2+=dodge_len
+		rectfill(x1,21,x2,27,3)
+		x1+=dodge_len
+		x2+=block_len
+		rectfill(x1,21,x2,27,10)
+		x1+=block_len
+		x2+=unlucky_len
+		rectfill(x1,21,x2,27,8)
+		
+		
+		line(30+parry_cur,18,
+			30+parry_cur,30,7)
+		if parry_state==parry.sliding
+			then
+			if btn(5) and
+					parry_cur<106-33
+			 then		
+				parry_cur+=parry_speed
+				return
+			else
+				parry_state=parry.show
+			end
+		end
+	end
+	if parry_state==parry.sliding
+		then
+		return
+	end
+	assert(parry_state==parry.show)
+	if parry_cur>=106-33 then
+		--end of gauge
+	end
+	msg=""
+	if parry_cur<lucky_parry then
+		msg="nothing."
+	elseif parry_cur<=
+			lucky_parry+lucky_len
+		then
+		msg="lucky!"
+		--stop()
+	elseif parry_cur<=
+			lucky_parry+parry_len+lucky_len
+		then
+		msg="parry!"
+	elseif parry_cur<=
+			lucky_parry+dodge_len+parry_len+lucky_len
+		then
+		msg="dodge!"
+	elseif parry_cur<=
+			lucky_parry+block_len+parry_len+dodge_len+lucky_len
+		then
+		msg="block!"
+	elseif parry_cur<=
+		lucky_parry+unlucky_len+parry_len+block_len+dodge_len+lucky_len
+		then
+		msg="unlucky!"
+	else
+		msg="nothing."
+	end
+	
+	print(msg,32,22,7) 
+		
 end
+
 
 --source entity,entity
 function draw_target(e,l)
@@ -1124,7 +1251,7 @@ function slime_ai(e)
 		assert(parry_move!=nil)
 		parry_p=p1
 		parry_se=e
-		in_parry=true
+		parry_state=parry.begin
 		
 	else
 		--not parry
