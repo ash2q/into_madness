@@ -476,7 +476,8 @@ p1={
 	x_move_act={},
 	--mapped to 🅾️ in act mode
 	z_action={},
-	atk_mode=true
+	atk_mode=true,
+	idle=20
 }
 
 int_warrior={
@@ -1310,6 +1311,21 @@ function c_parry()
 	end
 end
 
+targets={}
+
+function draw_targets_frame()
+	for t in all(targets) do
+		draw_target(t.e,t.l)
+	end
+end
+
+function process_targets()
+	for t in all(targets) do
+		if t.l<=0 then
+			del(targets,t)
+		end
+	end
+end
 
 --source entity,entity
 function draw_target(e,l)
@@ -1318,15 +1334,39 @@ function draw_target(e,l)
 	end
 end
 
+function add_target(se,t,l,done)
+	for target in all(targets) do
+		if target.t==t then
+			return nil
+		end
+	end
+	target={
+		se=se,
+		t=t,
+		l=l,
+		--called upon completion of
+		--targeting
+		done=done
+	}
+	add(targets,target)
+	return target
+end
+
 targeting_frames=14
 function slime_ai(e)
-	if e.eng<40 then return end
+	if e.eng<e.max_eng then return end
+	if e.targeting==nil and
+			rnd(e.idle)>=2.0 then
+		--return
+	end
 	av_moves={}
 	for mv in all(e.moves) do
 		if e.eng>=mv.cost then
 			add(av_moves,mv)
 		end
 	end
+	e.targeting=nil
+
 	if #av_moves==0 then return end
 	if e.targeting==nil then
 		e.targeting=targeting_frames
@@ -1335,7 +1375,9 @@ function slime_ai(e)
 	e.targeting-=1
 	draw_target(p1,e.targeting)
 	if not x_used then
-		if e.targeting>0 then return end
+		if e.targeting>0 then 
+			return 
+		end
 	else
 		--❎ was used
 		e.targeting=nil
@@ -1347,10 +1389,16 @@ function slime_ai(e)
 		parry_se=e
 		parry_state=parry.begin
 	else
-		m=av_moves[flr(rnd(#av_moves))+1]
-		enemy_use_move(e,p1,m)
-		--m.fn(m,e,p1)
 		--not parry
+		m=av_moves[flr(rnd(#av_moves))+1]
+		xd=abs(e.x-p1.x)
+		yd=abs(e.y-p1.y)
+		if xd<m.range and
+			yd<m.range then
+			--within range
+			enemy_use_move(e,p1,m)
+		else
+		end
 	end
 	e.targeting=nil
 	
