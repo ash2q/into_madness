@@ -440,7 +440,17 @@ end
 
 entities={}
 
-
+e_state={
+	--deciding, walking
+	idle=1,
+	--targeting, usage delays
+	wind_up=2,
+	--using move/action
+	using=3,
+	--todo?
+	stumble=4
+}
+	
 
 p1={
 	enemy=false,
@@ -631,31 +641,53 @@ function gen_sword(total)
 	return s
 end
 
+
 slash_move=nil
+bash_move=nil
 function init_moves()
 slash_move={
 	icon=23,
 	icon_disabled=24,
+	t_anim={16,16,17,17,18},
+	s_anim=nil, --optional
+	sound=0,
 	name="slash",
-	cost=40,
-	--gear,enemy
-	fn=
-	--source entity,enemy
-function(m,se,e)
+	eng_cost=40,
+	clr_cost=10,
+	range=10,
+	dmg=1,
+	splash=false,
+	spin=false,
+	lock=20,
+	cooldown=20,
+	targets=4
+}
+bash_move={
+	icon=30,
+	icon_disabled=31,
+	t_anim={26,27,28,29},
+	s_anim=nil, --optional
+	sound=0,
+	name="bash",
+	eng_cost=20,
+	clr_cost=0,
+	range=10,
+	dmg=1,
+	splash=false,
+	spin=false,
+	cooldown=10,
+	lock=0,
+	targets=1
+}
+end
+
+function do_move(m,se,e)
 --	play_anim({19,19,19,20,20,21,21},
-	play_anim({16,16,17,17,18},
+	play_anim(m.t_anim,
 		e.x,e.y)
 	apply_dmg(se,e,2*(se.patk/5))
 	return true
-end,
-	range=10,
-	--target count
-	target_count=1
-}
-
 end
-
-
 
 dmg_mul=1.0
 ret_dmg_mul=0.0
@@ -728,14 +760,18 @@ function combat_mode()
 	draw_hud()
 	c_draw_player()
 	c_draw_enemies()
+	draw_targets_frame()
 	if parry_state!=parry.done then
 		c_parry()
 		return
 	end
+	process_swings()
+	process_targets()
 	c_player_control()
 	for e in all(enemies) do
 		c_enemy_control(e)
 	end
+	draw_swings()
 	c_clean_enemies()
 	if #enemies==0 then
 		--battle done!
@@ -837,7 +873,8 @@ function p_x_move()
 	if p1.atk_mode then
 		m=p1.x_move_atk
 	end
-	return p_use_move(p1,m)
+	player_swing(m)
+	--return p_use_move(p1,m)
 end
 
 function enemy_use_move(e,p,mv)
@@ -1063,7 +1100,7 @@ function draw_backdrop()
 	line(0,68,128,68,5)
 end
 -->8
---hud and parry
+--hud and swings
 
 function draw_hud()
 	rectfill(0,0,128,12,0)
@@ -1082,7 +1119,7 @@ function draw_hud()
 	end
 	if m!=nil then
 		s=m.icon
-		if m.cost>p1.eng then
+		if m.eng_cost>p1.eng then
 			s=m.icon_disabled
 		end
 		spr(s,15,3)
@@ -1143,13 +1180,134 @@ function icn_meter(v,mx,x,y,col)
 end
 
 
-
-function do_parry()
-end
-
 function draw_parry_hud()
 	
 end
+
+swings={}
+function add_swing(src,mv)
+	if src!=p1 then
+		add_enemy_swing(src,mv)
+	end
+	
+	s={
+		friendly=false,
+		--dist=xd+yd,
+		mv=mv,
+		src=src,
+		cool=mv.cooldown,
+		hitbox=4,
+		lock=mv.lock,
+		rotate=true, --todo
+		cnt=0,
+		done=false
+	}
+	printh("add swing")
+	add(swings,s)
+	return s
+end
+
+function in_hitbox(e,s)
+	x1=s.x
+	x2=s.x+s.hitbox
+	y1=s.y
+	y2=s.y+s.hitbox
+	
+	if e.x>=x1 and e.x<=x2 then
+		printh("x_col")
+		x_col=true
+	end
+	if e.y>=y1 and e.y<=y2 then
+		printh("y_col")
+		y_col=true
+	end
+	return x_col and y_col
+end
+
+function player_swing(mv)
+	p=p1
+	s=add_swing(p1,mv)
+	s.x=p.x+6
+	s.y=p.y
+	s.hitbox=8
+	s.friendly=true
+	return s
+end
+
+function swing_hit(e,s)
+	play_anim(s.mv.t_anim,
+		e.x,e.y)
+	apply_dmg(s.src,e,calc_dmg(s))
+end
+
+--computes damage for swing
+function calc_dmg(s)
+	d=s.mv.dmg
+	d*=(s.src.patk/10)+1
+	return d
+end
+
+function process_swings()
+	for s in all(swings) do
+		if s.friendly then
+			for e in all(enemies) do
+				if s.cnt>s.mv.targets then
+					printh("cnt>targets")
+				--keep in swings for a bit
+				--for cooldown purposes
+					s.done=true
+				end
+				--check collisions
+				if not s.done and
+						in_hitbox(e,s) then
+						printh("in hitbox")
+					if s.lock<=0 then
+						swing_hit(e,s)
+						s.cnt+=1
+					else
+						s.lock-=1
+						s.locking=true
+						draw_target(e,s.lock)
+					end
+				elseif not in_hitbox(e,s)
+					then
+					s.lock=s.mv.lock
+				end
+
+			end
+			if s.cool<=0 then
+				del(swings,s)
+			else
+				s.cool-=1	
+			end
+		end
+	end
+end
+
+function draw_target(e,l)
+	if l%6<2 then
+		circ(e.x,e.y,8,8)
+	end
+end
+
+function is_swinging(e)
+	for s in all(swings) do
+		if s.src==e then
+			return true
+		end
+	end
+	return false
+end
+
+function draw_swings()
+	for s in all(swings) do
+
+		--spr(s.mv.t_anim[s.t_f],
+		--		s.t_x,s.t_y)
+			--todo source animation
+	end
+end
+
 -->8
 --parry and enemy ai
 
@@ -1321,6 +1479,7 @@ end
 
 function process_targets()
 	for t in all(targets) do
+		t.l-=1
 		if t.l<=0 then
 			del(targets,t)
 		end
@@ -1355,9 +1514,8 @@ end
 targeting_frames=14
 function slime_ai(e)
 	if e.eng<e.max_eng then return end
-	if e.targeting==nil and
-			rnd(e.idle)>=2.0 then
-		--return
+	if rnd(e.idle)<=2.0 then
+		return
 	end
 	av_moves={}
 	for mv in all(e.moves) do
@@ -1365,43 +1523,23 @@ function slime_ai(e)
 			add(av_moves,mv)
 		end
 	end
-	e.targeting=nil
-
-	if #av_moves==0 then return end
-	if e.targeting==nil then
-		e.targeting=targeting_frames
-		e.target=p1
-	end
-	e.targeting-=1
-	draw_target(p1,e.targeting)
-	if not x_used then
-		if e.targeting>0 then 
-			return 
-		end
-	else
-		--❎ was used
-		e.targeting=nil
-	end
-	if x_used then
+	
+	if btn(5) then
 		--parry
 		parry_move=av_moves[1]
 		parry_e=p1
 		parry_se=e
 		parry_state=parry.begin
-	else
-		--not parry
-		m=av_moves[flr(rnd(#av_moves))+1]
-		xd=abs(e.x-p1.x)
-		yd=abs(e.y-p1.y)
-		if xd<m.range and
-			yd<m.range then
-			--within range
-			enemy_use_move(e,p1,m)
-		else
-		end
 	end
-	e.targeting=nil
-	
+	--not parry
+	m=av_moves[flr(rnd(#av_moves))+1]
+	xd=abs(e.x-p1.x)
+	yd=abs(e.y-p1.y)
+	if xd<m.range and
+		yd<m.range then
+		--within range
+		enemy_use_move(e,p1,m)
+	end
 end
 
 
@@ -1414,14 +1552,14 @@ __gfx__
 007007007751577777515777775157777751577777717777777bb77777bb77777700077777000777770007777700077777707777004444000000000000000000
 00000000775757777757577777575777775757777757577777777777777777777707077777070777770707777707077777070777000440000000000000000000
 00000000775757777777577777777777775777777757577777777777777777777707077777770777777777777707777777070777000440000000000000000000
-7c7777777c17777771c77777777777777777777777777777000000000c1000000650000000000000000000000000000000000000000000000000000000000000
-7cc777777cc17777711c7777977777777779999777777777000000000cc100000665000000000000000000000000000000000000000000000000000000000000
-77cc777777cc17777711c7779777777777799a9777777777000aa00000cc10000066500000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c77977777777799a9977777777700a99a00000cc1000006650000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c7797777777799a99977777777700a99a00000cc1000006650000000000000000000000000000000000000000000000000000000000
-777cc777777cc17777711c779777777779a9977777777777000aa000000cc1000006650000000000000000000000000000000000000000000000000000000000
-77cc777777cc17777711c7779777777779977777999999970000000000cc10000066500000000000000000000000000000000000000000000000000000000000
-7cc777777cc17777711c7777977777777777777777777777000000000cc100000665000000000000000000000000000000000000000000000000000000000000
+7c7777777c17777771c77777777777777777777777777777000000000c100000065000000000000077777777777777777777777777cc77770000000000000000
+7cc777777cc17777711c7777977777777779999777777777000000000cc1000006650000000000007777777777777777777777777c77ccc70000000000000000
+77cc777777cc17777711c7779777777777799a9777777777000aa00000cc1000006650000000000077c77777771c77777771c7777c77777c0000100000005000
+777cc777777cc17777711c77977777777799a9977777777700a99a00000cc1000006650000000000cccc77771cccc77771ccccc777c7cc871111cc0055556600
+777cc777777cc17777711c7797777777799a99977777777700a99a00000cc1000006650000000000cccc77771cccc77771ccccc777c7cc87cccccccc66666666
+777cc777777cc17777711c779777777779a9977777777777000aa000000cc100000665000000000077c77777771c77777771c7777c77777c1111cc0055556600
+77cc777777cc17777711c7779777777779977777999999970000000000cc100000665000000000007777777777777777777777777c777ccc0000100000005000
+7cc777777cc17777711c7777977777777777777777777777000000000cc10000066500000000000077777777777777777777777777ccc7770000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1454,3 +1592,9 @@ __gfx__
 77777707077777777777770700777777777770070077777777770007077777777777777077777777777777777777777777777777777777770000000000000000
 77777077707777777777707777077777777707777707777777770777707777777777700700777777777777777777777777777777777777770000000000000000
 77777077707777777777707777777777777777777777777777777777707777777777707770777777777777777777777777777777777777770000000000000000
+__sfx__
+000a0000061500615006150061500b150001500015000150001500a1500515005150051500b15014050140501505015050150501505016050151500f1500d1500d1500d1500d1500c1500b1500b1500c1500c150
+001001010c8500c8500c8500c8500c8500c8500c8500c8500c8500c8500c8500c8500c8500c8500b8500a8500885006850058500ca500ca500ca500ca50000000c0000c000120000000000000000000000000000
+__music__
+00 01424344
+
