@@ -437,6 +437,19 @@ function init_gear_slots(e)
 		add(e.gear,empty_gear)
 	end
 end
+
+log_msgs={"","",""}
+function add_log(msg)
+	add(log_msgs,msg)
+end
+
+function print_logs()
+	--for i=#log_msgs,i=#log_msgs-3,-1 do
+	for i=0,2 do
+		local l=#log_msgs
+		print(log_msgs[l-i],1,120-(i*8),7)
+	end
+end
 -->8
 --specs,defs,spawns
 
@@ -689,8 +702,11 @@ end
 dmg_mul=1.0
 ret_dmg_mul=0.0
 function apply_dmg(se,e,d)
+	if se==p1 then
+		add_log("attacking!"..anim_c)
+	end
 	if ret_dmg_mul>0 then
-		d2=d*ret_dmg_mul
+ 	local d2=d*ret_dmg_mul
 		play_float_text("-"..flr(d2),10,se.x-4,
 		se.y-8,9)
 		se.health-=d2
@@ -761,10 +777,12 @@ function combat_mode()
 	draw_hud()
 	--c_draw_player()
 	c_draw_entities()
+	print_logs()
 	if parry_state!=parry.done then
 		c_parry()
 		return
 	end
+	
 	parry_dmg_mul=1
 	parry_rdmg_mul=0
 	process_swings_2()
@@ -774,6 +792,7 @@ function combat_mode()
 	end
 	draw_swings()
 	sanity_distortion()
+
 	
 	c_clean_enemies()
 	if #c_entities==1 then
@@ -1384,6 +1403,10 @@ function process_swing(sw)
 	if sw.state==s_state.begin
 		then
 		if sw.ttl<=0 then
+			if sw.src==p1 then
+				add_log(
+"missing is so embarassing")
+			end
 			sw.state=s_state.done
 			return
 		end
