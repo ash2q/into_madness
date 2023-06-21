@@ -761,7 +761,6 @@ function combat_mode()
 	draw_hud()
 	--c_draw_player()
 	c_draw_entities()
-	draw_targets_frame()
 	if parry_state!=parry.done then
 		c_parry()
 		return
@@ -769,7 +768,6 @@ function combat_mode()
 	parry_dmg_mul=1
 	parry_rdmg_mul=0
 	process_swings_2()
-	process_targets()
 	c_player_control()
 	for e in all(entities) do
 		c_enemy_control(e)
@@ -1279,8 +1277,11 @@ function in_hitbox(e,sw)
 	m=sw.hitbox/2.0
 	local xd=abs(e.x-sw.x)
 	local yd=abs(e.y-sw.y)
-	rect(sw.x-m,sw.y-m,sw.x+m,
-		sw.y+m,8)
+	if anim_c%3==0
+		then
+		rect(sw.x-m,sw.y-m,sw.x+m,
+			sw.y+m,14)
+	end
 	if xd<m and yd<m then
 		return true
 	end
@@ -1470,7 +1471,8 @@ end
 
 function parry_swing(sw)
 	if true then
-		return --disable enemy parry
+		--disable enemy parry for now
+		return 
 	end
 	parry_speed=1.5
 	parry_e=sw.target
@@ -1511,8 +1513,6 @@ parry={
 	show=4,
 	done=5,
 }
-parry_dmg_mul=1
-parry_rdmg_mul=0
 parry_state=parry.done
 parry_go=false
 --cursor
@@ -1534,6 +1534,10 @@ parry_speed=1.5
 parry_e=nil
 parry_src=nil
 parry_sw=nil
+--results
+parry_dmg_mul=1
+parry_rdmg_mul=0
+parry_msg="nothing."
 
 function c_parry()
 	if parry_sw.target!=p1 then
@@ -1632,28 +1636,28 @@ function c_parry()
 	if parry_cur>=106-33 then
 		--end of gauge
 	end
-	msg=""
+	parry_msg=""
 	if parry_cur<lucky_parry then
-		msg="nothing."
+		parry_msg="nothing."
 		parry_rdmg=0
 		parry_dmg_mul=1
 	elseif parry_cur<=
 			lucky_parry+lucky_len
 		then
-		msg="lucky!"
+		parry_msg="lucky!"
 		parry_rdmg_mul=3.0
 		parry_dmg_mul=0.0
 		--stop()
 	elseif parry_cur<=
 			lucky_parry+parry_len+lucky_len
 		then
-		msg="parry!"
+		parry_msg="parry!"
 		parry_rdmg_mul=1.0
 		parry_dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+dodge_len+parry_len+lucky_len
 		then
-		msg="dodge!"
+		parry_msg="dodge!"
 		parry_dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+block_len+parry_len+dodge_len+lucky_len
@@ -1663,35 +1667,18 @@ function c_parry()
 	elseif parry_cur<=
 		lucky_parry+unlucky_len+parry_len+block_len+dodge_len+lucky_len
 		then
-		msg="unlucky!"
+		parry_msg="unlucky!"
 		dmg_mul=3.0
 	else
-		msg="nothing."
+		parry_msg="nothing."
 		dmg_mul=1.0
 	end
-	print(msg,32,22,7) 
+	print(parry_msg,32,22,7) 
 	show_delay-=1
 	if show_delay<=0 then
 		parry_state=parry.done
 		swing_hit(parry_e,parry_sw)
 		--m.fn(m,parry_src,parry_e)
-	end
-end
-
-targets={}
-
-function draw_targets_frame()
-	for t in all(targets) do
-		draw_target(t.se,t.t,t.l)
-	end
-end
-
-function process_targets()
-	for t in all(targets) do
-		t.l-=1
-		if t.l<=0 then
-			del(targets,t)
-		end
 	end
 end
 
@@ -1709,23 +1696,6 @@ function draw_target(se,e,l)
 	end
 end
 
-function add_target(se,t,l,done)
-	for target in all(targets) do
-		if target.t==t then
-			return nil
-		end
-	end
-	target={
-		se=se,
-		t=t,
-		l=l,
-		--called upon completion of
-		--targeting
-		done=done
-	}
-	add(targets,target)
-	return target
-end
 
 targeting_frames=14
 function slime_ai(e)
