@@ -640,6 +640,7 @@ slash_move={
 	icon=23,
 	icon_disabled=24,
 	t_anim={16,16,17,17,18},
+	r_anim={33,33,34,34,35,35,36,36},
 	s_anim=nil, --optional
 	sound=0,
 	name="slash",
@@ -659,6 +660,7 @@ bash_move={
 	icon=30,
 	icon_disabled=31,
 	t_anim={26,27,28,29},
+	r_anim={33,33,34,34,35,35,36,36},
 	s_anim=nil, --optional
 	sound=0,
 	name="bash",
@@ -733,7 +735,7 @@ function setup_combat()
 	--	,p1)
 	c_entities={}
 	add(c_entities,p1)
-	local e
+	
 	for e in all(entities) do
 		if tb_same_pos(p1,e)
 		then
@@ -764,6 +766,8 @@ function combat_mode()
 		c_parry()
 		return
 	end
+	parry_dmg_mul=1
+	parry_rdmg_mul=0
 	process_swings_2()
 	process_targets()
 	c_player_control()
@@ -1316,25 +1320,38 @@ function enemy_swing(e,mv)
 end
 
 function swing_hit(e,s)
-	play_anim(s.mv.t_anim,
-		e.x,e.y)
+	if parry_dmg_mul>0 then
+		play_anim(s.mv.t_anim,
+			e.x,e.y)
+	end
+	if parry_rdmg_mul>0 then	
+		play_anim(s.mv.r_anim,
+			s.src.x,s.src.y)
+	end
 	apply_dmg(s.src,e,calc_dmg(s))
 end
 
 --computes damage for swing
 function calc_dmg(s)
-	d=s.mv.dmg
+	local d=s.mv.dmg
 	d*=(s.src.patk/10)+1
+	
+	local rdmg=d*parry_rdmg_mul
+	d*=parry_dmg_mul
+	--todo apply armor etc
 	return d
 end
+
+
 
 s_state={
 	generate=0,
 	begin=1,
 	locking=2,
 	locked=3,
-	cooldown=4,
-	done=5
+	parry=4,
+	cooldown=5,
+	done=6
 }
 
 
@@ -1394,6 +1411,14 @@ function process_swing(sw)
 			--requires no locking
 			
 		end
+		if (p1==sw.target and
+				btnp(4) and btnp(5))
+				or (p1!=sw.target and 
+				sw.target.luck*10>rnd(1000)) 
+			then
+			sw.parried=true
+		end
+		
 		if in_hitbox(sw.target,sw) then
 			draw_target(sw.src,
 				sw.target,sw.lock)
@@ -1409,10 +1434,23 @@ function process_swing(sw)
 		then
 		assert(sw.target!=nil)
 		if sw.delay<=0 then
-			swing_hit(sw.target,sw)
-			sw.state=s_state.cooldown
+			if sw.parried then
+				sw.state=s_state.parry
+			else
+				swing_hit(sw.target,sw)
+				sw.state=s_state.cooldown
+			end
 		end
 		sw.delay-=1
+	elseif sw.state==s_state.parry
+		then
+			if p1==sw.target then
+				parry_swing_player(sw)
+				sw.state=s_state.cooldown
+			else
+				parry_swing(sw)
+				sw.state=s_state.cooldown
+			end
 	elseif sw.state==s_state.cooldown
 		then
 		sw.cooldown-=1
@@ -1420,6 +1458,25 @@ function process_swing(sw)
 			sw.state=s_state.done
 		end
 	end
+end
+
+function parry_swing_player(sw)
+	parry_speed=1.5
+	parry_e=sw.target
+	parry_src=sw.src
+	parry_sw=sw
+	parry_state=parry.begin
+end
+
+function parry_swing(sw)
+	if true then
+		return --disable enemy parry
+	end
+	parry_speed=1.5
+	parry_e=sw.target
+	parry_src=sw.src
+	parry_sw=sw
+	parry_state=parry.begin
 end
 
 function is_swinging(e)
@@ -1454,8 +1511,9 @@ parry={
 	show=4,
 	done=5,
 }
+parry_dmg_mul=1
+parry_rdmg_mul=0
 parry_state=parry.done
-parry_reset=true
 parry_go=false
 --cursor
 parry_cur=0
@@ -1469,21 +1527,33 @@ dodge_len=2
 block_len=3
 unlucky_len=8
 --(end ordered)
-parry_speed=1.5
 show_delay=nil
+parry_sim=false
+--user variables
+parry_speed=1.5
 parry_e=nil
-parry_se=nil
-parry_move=nil
+parry_src=nil
+parry_sw=nil
+
 function c_parry()
+	if parry_sw.target!=p1 then
+		parry_sim=true
+	end
+	local msg="❎"
+	local blink=12
+	if parry_sim then
+		msg="😐"
+		blink=8
+	end
 	rectfill(16,16,112,32,0)
 	if anim_c%4<2 or 
 			parry_state==parry.show then
-		print("❎",18,22,7)
+		print(msg,18,22,7)
 	else
- 	print("❎",18,22,8)
+ 	print(msg,18,22,blink)
 	end
 	if parry_state==parry.begin then
-		if not btn(5) then
+		if parry_sim or not btn(5) then
 			parry_state=parry.ready
 			show_delay=10
 			parry_cur=0
@@ -1494,11 +1564,11 @@ function c_parry()
 	rect(30,20,106,28,6)
 	
 	if parry_state==parry.ready then
-		if btnp(5) then
+		if parry_sim or btnp(5) then
 			parry_state=parry.sliding
 			lucky_parry=rnd(40)+20
-			xd=flr(abs(parry_se.x-parry_e.x))
-			yd=flr(abs(parry_se.y-parry_e.y))
+			xd=flr(abs(parry_src.x-parry_e.x))
+			yd=flr(abs(parry_src.y-parry_e.y))
 			xd=min(xd,35)
 			xd=min(yd,35)
 			--d=flr(xd+yd)
@@ -1535,10 +1605,16 @@ function c_parry()
 		
 		
 		line(30+parry_cur,18,
-			30+parry_cur,30,7)
+			30+parry_cur,30,blink)
 		if parry_state==parry.sliding
 			then
-			if btn(5) and
+			local sim_press=false
+			if parry_sim then
+				sim_press=
+					parry_sw.src.luck*10<
+					rnd(1000)
+			end
+			if (sim_press or btn(5)) and
 					parry_cur<106-33
 			 then		
 				parry_cur+=parry_speed
@@ -1559,30 +1635,31 @@ function c_parry()
 	msg=""
 	if parry_cur<lucky_parry then
 		msg="nothing."
+		parry_rdmg=0
+		parry_dmg_mul=1
 	elseif parry_cur<=
 			lucky_parry+lucky_len
 		then
 		msg="lucky!"
-		ret_dmg_mul=3.0
-		dmg_mul=0.0
+		parry_rdmg_mul=3.0
+		parry_dmg_mul=0.0
 		--stop()
 	elseif parry_cur<=
 			lucky_parry+parry_len+lucky_len
 		then
 		msg="parry!"
-		ret_dmg_mul=1.0
-		dmg_mul=0.0
+		parry_rdmg_mul=1.0
+		parry_dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+dodge_len+parry_len+lucky_len
 		then
 		msg="dodge!"
-		ret_dmg_mul=0.0
-		dmg_mul=0.0
+		parry_dmg_mul=0.0
 	elseif parry_cur<=
 			lucky_parry+block_len+parry_len+dodge_len+lucky_len
 		then
 		msg="block!"
-		dmg_mul=1.5
+		parry_dmg_mul=0.5
 	elseif parry_cur<=
 		lucky_parry+unlucky_len+parry_len+block_len+dodge_len+lucky_len
 		then
@@ -1596,8 +1673,8 @@ function c_parry()
 	show_delay-=1
 	if show_delay<=0 then
 		parry_state=parry.done
-		m=parry_move
-		m.fn(m,parry_se,parry_e)
+		swing_hit(parry_e,parry_sw)
+		--m.fn(m,parry_src,parry_e)
 	end
 end
 
@@ -1621,8 +1698,14 @@ end
 --src, entity, len
 function draw_target(se,e,l)
 	if l%6<2 then
-		line(se.x,se.y,e.x,e.y,2)
-		circ(e.x,e.y,8,8)
+		if se.faction<=0 then
+			blink=1
+		else
+			blink=8
+		end
+		line(se.x,se.y,e.x,e.y,blink)
+
+		circ(e.x,e.y,8,blink)
 	end
 end
 
@@ -1647,9 +1730,12 @@ end
 targeting_frames=14
 function slime_ai(e)
 	if e.eng<e.max_eng then return end
-	--if rnd(e.idle)<=4.0 then
-	--	return
-	--end
+	if e.idle==nil or e.idle<=0 then
+		e.idle=100
+	else
+		e.idle-=1
+		return
+	end
 	av_moves={}
 	for mv in all(e.moves) do
 		if e.eng>=mv.eng_cost then
@@ -1680,14 +1766,14 @@ __gfx__
 777cc777777cc17777711c779777777779a9977777777777000aa000000cc100000665000000000077c77777771c77777771c7777c77777c1111cc0055556600
 77cc777777cc17777711c7779777777779977777999999970000000000cc100000665000000000007777777777777777777777777c777ccc0000100000005000
 7cc777777cc17777711c7777977777777777777777777777000000000cc10000066500000000000077777777777777777777777777ccc7770000000000000000
-70777707000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-70700707000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-70700707000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77000077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77077077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77077077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77700777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-77700777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+70777707777777777777777770707777557777550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+70700707777777777070777705755757577777570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+70700707770777777777757777577777777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77000077775557777577755755777757577777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77077077775557777577757755777775577777750000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77077077777570777557570755777757777777750000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77700777777777777775707775757550577577550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77700777777777777777777777757707575775570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ccccccccbbbbbbbbaaaaaaaa88188888000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ccccccccbbbbbbbbaaaaaaaa88881888007700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 c00cc00cb00bb00ba09aa90a80888808070700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
