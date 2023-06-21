@@ -455,15 +455,15 @@ e_state={
 	
 
 p1={
-	enemy=false,
+	faction=0,
 	tb_anim={64,64,72,72},
 	tb_spr_size=2,
 	--tb_mv_anim={64,66,68,70},
 	tb_x=16*3,
 	tb_y=16,
 	
+	c_move_anim={64,64,72,72},
 	c_anim={64,64,72,72},
-	c_idle_anim={64,64,72,72},
 	c_sz=2,
 	health=50,
 	--energy and clarity
@@ -519,6 +519,7 @@ e_slime={}
 function init_tb_enemies()
 	e_slime={
 		etype=1, --todo
+		faction=1,
 		tb_anim={6,6,7,7},
 		tb_spr_size=0.75,
 		c_anim={74,76},
@@ -649,8 +650,10 @@ slash_move={
 	splash=false,
 	spin=false,
 	lock=20,
-	cooldown=50,
-	targets=4
+	cooldown=20,
+	targets=4,
+	ttl=20,
+	delay=5
 }
 bash_move={
 	icon=30,
@@ -667,7 +670,9 @@ bash_move={
 	spin=false,
 	cooldown=10,
 	lock=0,
-	targets=1
+	targets=1,
+	ttl=20,
+	delay=5
 }
 end
 
@@ -709,7 +714,7 @@ end
 
 --all enemies within the same
 --grid position
-enemies={}
+c_entities={}
 
 function trigger_combat(e)
 	setup_combat()
@@ -726,19 +731,23 @@ function setup_combat()
 	
 	--print_table("-----player 1-----"
 	--	,p1)
-	
+	c_entities={}
+	add(c_entities,p1)
+	local e
 	for e in all(entities) do
 		if tb_same_pos(p1,e)
 		then
-			add(enemies,e)
+			add(c_entities,e)
 		end
 	end
 	y=80
-	for e in all(enemies) do
-		e.x=70
-		e.y=y
-		e.moved=false
-		y+=20
+	for e in all(c_entities) do
+		if e.faction==1 then
+			e.x=70
+			e.y=y
+			e.moved=false
+			y+=20
+		end
 	end
 end
 
@@ -748,29 +757,29 @@ function combat_mode()
 	palt(7,true)
 	--draw_backdrop()
 	draw_hud()
-	c_draw_player()
-	c_draw_enemies()
+	--c_draw_player()
+	c_draw_entities()
 	draw_targets_frame()
 	if parry_state!=parry.done then
 		c_parry()
 		return
 	end
-	process_swings()
+	process_swings_2()
 	process_targets()
 	c_player_control()
-	for e in all(enemies) do
+	for e in all(entities) do
 		c_enemy_control(e)
 	end
 	draw_swings()
 	sanity_distortion()
 	
 	c_clean_enemies()
-	if #enemies==0 then
+	if #c_entities==1 then
 		--battle done!
 		trigger_dungeon()
 	end
 	track_charging(p1)
-	for e in all(enemies) do
+	for e in all(c_entities) do
 		track_charging(e)
 	end
 end
@@ -789,16 +798,20 @@ function track_charging(e)
 end
 
 function c_clean_enemies()
-	for e in all(enemies) do
-		if e.health<=0 then
-			del(enemies,e)
-			del(entities,e)
+	for e in all(c_entities) do
+		if e.faction>0 then
+			if e.health<=0 then
+				del(c_entities,e)
+				del(entities,e)
+			end
 		end
 	end
 end
 
 function c_enemy_control(e)
-	e.ai(e)
+	if p1!=e then
+		e.ai(e)
+	end
 end
 
 
@@ -908,7 +921,7 @@ function p_use_move(ent,move)
 	cnt=p.target_count
 	assert(cnt>0)
 	hits=0
-	for e in all(enemies) do
+	for e in all(c_entities) do
 		if cnt<=0 then
 			break
 		end
@@ -938,7 +951,7 @@ function use_act(ent,act)
 		return
 	end
 	cnt=p.t_cnt
-	for e in all(enemies) do
+	for e in all(c_entities) do
 		if cnt<=0 then
 			return
 		end
@@ -1032,10 +1045,16 @@ function c_draw_player()
 	spr(anim[tmp],p1.x-8,p1.y-8,2,2)
 end
 
-function c_draw_enemies()
-	for e in all(enemies) do
+function c_draw_entities()
+	for e in all(c_entities) do
 		c=flr(anim_c/3)
-		anim=e.c_anim
+		local anim=e.c_anim
+		if e.moved!=nil and e.moved
+			then
+			anim=e.c_move_anim
+		else
+			anim=e.c_anim
+		end
 		tmp=(c%#anim)+1
 		spr(anim[tmp],e.x-8,e.y-8,2,2)
 	end
@@ -1110,7 +1129,7 @@ function draw_hud()
 		m=p1.x_move_act
 	end
 	if m!=nil then
-		s=m.icon
+		local s=m.icon
 		if m.eng_cost>p1.eng then
 			s=m.icon_disabled
 		end
@@ -1233,47 +1252,35 @@ end
 swings={}
 function add_swing(src,mv)
 	local s={
-		friendly=false,
 		--dist=xd+yd,
 		mv=mv,
 		src=src,
-		cool=mv.cooldown,
+		cooldown=mv.cooldown,
 		hitbox=4,
 		lock=mv.lock,
 		rotate=true, --todo
 		cnt=0,
 		done=false,
-		hits={}
+		hits={},
+		state=0,
+		ttl=mv.ttl,
+		delay=mv.delay
 	}
 	printh("add swing")
 	add(swings,s)
 	return s
 end
 
-function in_hitbox(e,s)
-	mod=s.hitbox/2
-	local x1=s.x-mod
-	local x2=s.x+mod
-	local y1=s.y-mod
-	local y2=s.y+mod
-	if not s.friendly then
-		--face left instead of right
-		x1=s.x+mod
-		x2=s.x-mod
-		y1=s.y-mod
-		y2=s.y+mod
+function in_hitbox(e,sw)
+	m=sw.hitbox/2.0
+	local xd=abs(e.x-sw.x)
+	local yd=abs(e.y-sw.y)
+	rect(sw.x-m,sw.y-m,sw.x+m,
+		sw.y+m,8)
+	if xd<m and yd<m then
+		return true
 	end
-	local x_col=false
-	local y_col=false
-	if e.x>=x1 and e.x<=x2 then
-		x_col=true
-	end
-	if e.y>=y1 and e.y<=y2 then
-		y_col=true
-	end
-	rect(x1,y1,x2,y2,8)
-	--if y2>90 then assert(false) end
-	return x_col and y_col
+	return false
 end
 
 function has_swing(e)
@@ -1294,7 +1301,6 @@ function player_swing(mv)
 	s.x=p.x+8
 	s.y=p.y
 	s.hitbox=16
-	s.friendly=true
 	return s
 end
 
@@ -1306,7 +1312,6 @@ function enemy_swing(e,mv)
 	s.x=e.x-8
 	s.y=e.y
 	s.hitbox=16
-	s.friendly=false
 	return s
 end
 
@@ -1323,94 +1328,98 @@ function calc_dmg(s)
 	return d
 end
 
-function process_swings()
-	local s,e
-	for s in all(swings) do
-		local lock_mod=0
-		if s.cnt>=s.mv.targets then
-			--keep in swings for a bit
-			--for cooldown purposes
-			s.done=true
-		end
-		if s.friendly then
-			for e in all(enemies) do
-				--check collisions
-				if not s.done and
-						in_hitbox(e,s) 
-				 then
-					printh("in hitbox")
-					if s.lock<=0 then
-						if not contains(s.hits,e)
-							then
-							swing_hit(e,s)
-							add(s.hits,e)
-							s.cnt+=1
-						end
-					end
-					lock_mod=1
-					if lock_mod>0 then
-						add_target(p1,e,s.mv.lock)
-					end
-				end
-			end --end foreach enemy
-			s.lock-=lock_mod
-
-			
-			if s.cool<=0 then
-				printh("del swings")
-				del(swings,s)
-			else
-				s.cool-=1	
-			end
-		else --not friendly
-			--check collisions
-			if not s.done and
-					in_hitbox(p1,s) 
-			 then					
-				printh("in enemy hitbox")
-				if s.lock<=0 then
-					if not contains(s.hits,p1)
-						then
-						swing_hit(p1,s)
-						add(s.hits,e)
-						s.cnt+=1
-					end
-				end
-				if btnp(4) then
-					--parry
-					parry_move=s.mv
-					parry_e=p1
-					parry_se=e
-					parry_state=parry.begin
-				end				
-				s.lock-=1
-					--	s.locking=true
-				draw_target(s.src,p1,s.lock)		
---			elseif not in_hitbox(p1,s)
---				then
---				s.lock=s.mv.lock
-			end
-			if s.cool<=0 then
-				printh("del swings")
-				del(swings,s)
-			else
-				s.cool-=1	
-			end
-		end --end foreach swing
-	end
-end
-
 s_state={
+	generate=0,
 	begin=1,
 	locking=2,
 	locked=3,
-	hit=4,
-	cooldown=5
+	cooldown=4,
+	done=5
 }
 
 
 function process_swings_2()
-	
+	for sw in all(swings) do
+		process_swing(sw)
+		if sw.state==s_state.done then
+			del(swings,sw)
+		end
+	end	
+end
+
+function process_swing(sw)
+	sw.ttl-=1
+ if sw.state==s_state.generate
+ 	then
+ 	if sw.gen_count==nil or 
+ 			sw.gen_count<=0 then
+ 		sw.state=s_state.begin
+ 		return
+ 	end
+ 	local s={}
+ 	copy_into(s,sw)
+ 	s.gen_count=0
+ 	sw.gen_count-=1
+ 	add(swings,s)
+ end
+ 	
+	if sw.state==s_state.begin
+		then
+		if sw.ttl<=0 then
+			sw.state=s_state.done
+			return
+		end
+		
+		for e in all(c_entities) do
+			
+			if e.faction!=sw.src.faction
+				then
+				printh("--------")
+				printh("e.faction="..e.faction)
+				printh("sw.src.faction="..sw.src.faction)
+				if in_hitbox(e,sw) then
+					if sw.lock<=0 then
+						sw.state=s_state.locked
+					else
+						sw.state=s_state.locking
+					end
+					sw.target=e
+					break
+				end
+			end
+		end
+	elseif sw.state==s_state.locking
+		then
+		if sw.lock==0 then
+			--requires no locking
+			
+		end
+		if in_hitbox(sw.target,sw) then
+			draw_target(sw.src,
+				sw.target,sw.lock)
+			sw.lock-=1
+		else
+			sw.state=s_state.done
+			sw.lock=sw.mv.lock
+		end
+		if sw.lock<=0 then
+			sw.state=s_state.locked
+		end
+	elseif sw.state==s_state.locked
+		then
+		assert(sw.target!=nil)
+		if sw.delay<=0 then
+			swing_hit(sw.target,sw)
+			sw.state=s_state.cooldown
+		end
+		sw.delay-=1
+	elseif sw.state==s_state.cooldown
+		then
+		sw.cooldown-=1
+		if sw.cooldown<=0 then
+			sw.state=s_state.done
+		end
+	end
 end
 
 function is_swinging(e)
@@ -1647,7 +1656,7 @@ function slime_ai(e)
 			add(av_moves,mv)
 		end
 	end
-	enemy_swing(e,av_moves[1])
+	--enemy_swing(e,av_moves[1])
 	
 	
 end
