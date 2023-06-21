@@ -1656,7 +1656,7 @@ function slime_ai(e)
 			add(av_moves,mv)
 		end
 	end
-	--enemy_swing(e,av_moves[1])
+	enemy_swing(e,av_moves[1])
 	
 	
 end
