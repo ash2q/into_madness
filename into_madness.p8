@@ -281,10 +281,10 @@ function play_text(t,l,x,y,col)
 	}
 	add(atexts,text)
 end
-function play_float_text(t,l,x,y,col)
+function play_float_text(t,x,y,col)
 	text={
 		t=t,
-		l=l, --length
+		l=20, --length
 		x=x,
 		y=y,
 		col=col,
@@ -481,11 +481,10 @@ p1={
 	health=50,
 	--energy and clarity
 	eng=0,
-	max_eng=0,
+	max_eng=50,
 	eng_rate=0.5,
 	clr=0,
-	clr_rate=0,
-	max_clr=0,
+	max_clr=50,
 	clr_rate=0.5,
 	sanity=100,
 	--invincibility
@@ -542,12 +541,12 @@ function init_tb_enemies()
 		tb_move=tb_move_square,
 		--energy(moves)
 		eng=0,
-		max_eng=0,
-		eng_rate=1,
+		max_eng=50,
+		eng_rate=0.5,
 		--clarity(actions)
 		clr=0,
-		max_clr=0,
-		clr_rate=0,
+		max_clr=50,
+		clr_rate=0.5,
 		ai=slime_ai,
 		--populated by equips
 		moves={},
@@ -663,11 +662,11 @@ slash_move={
 	dmg=2,
 	splash=false,
 	spin=false,
-	lock=20,
+	lock=30,
 	cooldown=20,
 	targets=4,
 	ttl=20,
-	delay=5
+	delay=2
 }
 bash_move={
 	icon=30,
@@ -698,10 +697,10 @@ function apply_dmg(src,e,dmg,rdmg)
 	end
 	if rdmg>0 then
 		play_float_text("-"..flr(rdmg),
-			10,src.x-4,src.y-8,9)
+			src.x-4,src.y-8,9)
 		src.health-=rdmg
 	end
-	play_float_text("-"..flr(dmg),10,e.x-4,
+	play_float_text("-"..flr(dmg),e.x-4,
 		e.y-8,9)
 	e.health-=dmg
 end
@@ -848,8 +847,6 @@ function c_player_control()
 	if btnp(5) then
 		--primary
 		p_x_move()
-		--play_text("miss!",10,
-		--	p1.x-2,p1.y-8,0)
 	end
 	
 	--compensate diagnol moves
@@ -887,93 +884,7 @@ function p_x_move()
 		m=p1.x_move_atk
 	end
 	player_swing(m)
-	--return p_use_move(p1,m)
 end
-
-function enemy_use_move(e,p,mv)
-	if mv==nil then return end
-	if mv.cost>e.eng then
-		return
-	end
-	cnt=mv.target_count
-	assert(cnt>0)
-	hits=0
-	xd=abs(e.x-p.x)
-	yd=abs(e.y-p.y)
-	if xd<mv.range and
-			yd<mv.range then
-	cnt+=1
-		--source is entity using the
-		--move
-		if mv.fn(mv,e,p) then
-			hits+=1
-		end
-	end
-	e.eng-=mv.cost
-	if hits==0 then
-		play_float_text("miss",10,
-			e.x-4,e.y-6,8)
-	end
-end
-
-x_used=false
-
-function p_use_move(ent,move)
-	x_used=false
-	p=move
-	if p==nil then return end
-	if p.cost>ent.eng then
-		return
-	end
-	x_used=true
-	cnt=p.target_count
-	assert(cnt>0)
-	hits=0
-	for e in all(c_entities) do
-		if cnt<=0 then
-			break
-		end
-		xd=abs(e.x-ent.x)
-		yd=abs(e.y-ent.y)
-		if xd<p.range and
-				yd<p.range then
-			cnt+=1
-			--source is entity using the
-			--move
-			if p.fn(p,ent,e) then
-				hits+=1
-			end
-		end
-	end
-	ent.eng-=p.cost
-	if hits==0 then
-		play_float_text("miss",10,
-			ent.x-4,ent.y-6,8)
-	end
-end
-
-function use_act(ent,act)
-	p=act
-	if p==nil then return end
-	if p.cost>e.clr then
-		return
-	end
-	cnt=p.t_cnt
-	for e in all(c_entities) do
-		if cnt<=0 then
-			return
-		end
-		xd=abs(e.x-ent.x)
-		yd=abs(e.y-ent.y)
-		if xd<p.range and
-				yd<p.range then
-			cnt+=1
-			p.fn(p,e,ent)
-		end
-	end
-	ent.eng-=p.cost
-end
-
 
 function recalc_stats(e)
 	e.patk=0
@@ -1274,8 +1185,11 @@ function add_swing(src,mv)
 		ttl=mv.ttl,
 		delay=mv.delay
 	}
-	printh("add swing")
-	add(swings,s)
+	if check_costs(s) then
+		add(swings,s)
+	else
+		return nil
+	end
 	return s
 end
 
@@ -1309,6 +1223,7 @@ function player_swing(mv)
 		return nil
 	end
 	local s=add_swing(p1,mv)
+	if s==nil then return nil end
 	s.x=p.x+8
 	s.y=p.y
 	s.hitbox=16
@@ -1320,6 +1235,7 @@ function enemy_swing(e,mv)
 		return nil
 	end
 	local s=add_swing(e,mv)
+	if s==nil then return nil end
 	s.x=e.x-8
 	s.y=e.y
 	s.hitbox=16
@@ -1371,6 +1287,7 @@ function process_swings_2()
 	for sw in all(swings) do
 		process_swing(sw)
 		if sw.state==s_state.done then
+			apply_costs(sw)
 			del(swings,sw)
 		end
 	end	
@@ -1395,32 +1312,28 @@ function process_swing(sw)
 	if sw.state==s_state.begin
 		then
 		if sw.ttl<=0 then
-			if sw.src==p1 then
-				add_log(
-"missing is so embarassing")
-			end
+			sw.missed=true
+			play_float_text("miss!",
+				sw.src.x-6,sw.src.y-4,7)
 			sw.state=s_state.done
-			return
-		end
-		
-		for e in all(c_entities) do
-			
-			if e.faction!=sw.src.faction
-				then
-				printh("--------")
-				printh("e.faction="..e.faction)
-				printh("sw.src.faction="..sw.src.faction)
-				if in_hitbox(e,sw) then
-					if sw.lock<=0 then
-						sw.state=s_state.locked
-					else
-						sw.state=s_state.locking
+		else
+			sw.missed=false		
+			for e in all(c_entities) do
+				
+				if e.faction!=sw.src.faction
+					then
+					if in_hitbox(e,sw) then
+						if sw.lock<=0 then
+							sw.state=s_state.locked
+						else
+							sw.state=s_state.locking
+						end
+						sw.target=e
+						break
 					end
-					sw.target=e
-					break
 				end
-			end
-		end
+			end --end for entities
+		end --end if ttl
 	elseif sw.state==s_state.locking
 		then
 		if sw.lock==0 then
@@ -1428,11 +1341,18 @@ function process_swing(sw)
 			
 		end
 		if (p1==sw.target and
-				btnp(4) and btnp(5))
-				or (p1!=sw.target and 
-				sw.target.luck*10>rnd(1000)) 
+				btn(4) and not btn(5))
+				--or (p1!=sw.target and 
+				--sw.target.luck*10>rnd(1000)) 
 			then
-			sw.parried=true
+			if sw.parry_hold==nil then
+				sw.parry_hold=15
+			end
+			if sw.parry_hold>0 then
+				sw.parry_hold-=1
+			else
+				sw.parried=true
+			end
 		end
 		
 		if in_hitbox(sw.target,sw) then
@@ -1474,6 +1394,28 @@ function process_swing(sw)
 			sw.state=s_state.done
 		end
 	end
+end
+
+function apply_costs(sw)
+	local src=sw.src
+	if sw.missed then
+		src.eng-=sw.mv.eng_cost/2
+		src.clr-=sw.mv.clr_cost/2
+	else
+		src.eng-=sw.mv.eng_cost
+		src.clr-=sw.mv.clr_cost
+	end
+end
+
+function check_costs(sw)
+	local src=sw.src
+	if src.eng<sw.mv.eng_cost then
+		return false
+	end
+	if src.clr<sw.mv.clr_cost then
+		return false
+	end
+	return true
 end
 
 function parry_swing_player(sw)
@@ -1536,16 +1478,16 @@ parry_cur=0
 --(on x-axis)
 lucky_parry=0
 --order is important!
-lucky_len=2
-parry_len=2
-dodge_len=2
+lucky_len=1
+parry_len=1
+dodge_len=1
 block_len=3
 unlucky_len=8
 --(end ordered)
 show_delay=nil
 parry_sim=false
 --user variables
-parry_speed=1.5
+parry_speed=1
 parry_e=nil
 parry_src=nil
 parry_sw=nil
