@@ -691,32 +691,19 @@ bash_move={
 }
 end
 
-function do_move(m,se,e)
---	play_anim({19,19,19,20,20,21,21},
-	play_anim(m.t_anim,
-		e.x,e.y)
-	apply_dmg(se,e,2*(se.patk/5))
-	return true
-end
 
-dmg_mul=1.0
-ret_dmg_mul=0.0
-function apply_dmg(se,e,d)
-	if se==p1 then
+function apply_dmg(src,e,dmg,rdmg)
+	if src==p1 then
 		add_log("attacking!"..anim_c)
 	end
-	if ret_dmg_mul>0 then
- 	local d2=d*ret_dmg_mul
-		play_float_text("-"..flr(d2),10,se.x-4,
-		se.y-8,9)
-		se.health-=d2
+	if rdmg>0 then
+		play_float_text("-"..flr(rdmg),
+			10,src.x-4,src.y-8,9)
+		src.health-=rdmg
 	end
-	d*=dmg_mul
-	play_float_text("-"..flr(d),10,e.x-4,
+	play_float_text("-"..flr(dmg),10,e.x-4,
 		e.y-8,9)
-	e.health-=d
-	dmg_mul=1.0
-	ret_dmg_mul=0.0
+	e.health-=dmg
 end
 
 function calc_attributes(e)
@@ -1348,16 +1335,21 @@ function swing_hit(e,s)
 		play_anim(s.mv.r_anim,
 			s.src.x,s.src.y)
 	end
-	apply_dmg(s.src,e,calc_dmg(s))
+	apply_dmg(s.src,e,
+		calc_dmg(s),calc_rdmg(s))
 end
 
 --computes damage for swing
 function calc_dmg(s)
 	local d=s.mv.dmg
 	d*=(s.src.patk/10)+1
-	
-	local rdmg=d*parry_rdmg_mul
 	d*=parry_dmg_mul
+	--todo apply armor etc
+	return d
+end
+function calc_rdmg(s)
+	local d=s.mv.dmg
+	d*=parry_rdmg_mul
 	--todo apply armor etc
 	return d
 end
