@@ -329,7 +329,6 @@ function equip(ent,g)
 	assert(s<=#slot_names)
 	--unequip(ent,s)
 	assert(g!=nil)
-	printh("ec:"..#g.moves)
 	ent.gear[s]=g
 end
 
@@ -362,7 +361,6 @@ function rebuild_lists(ent)
 	ent.actions={}
 	for g in all(ent.gear) do
 		assert(g.moves!=nil)
-		printh("c: "..#g.moves)
 		for m in all(g.moves) do
 			if not contains(
 					ent.moves,m)
@@ -408,27 +406,6 @@ function rebuild_player(e)
 				e.moves,e.z_action) 
 		then
 		e.z_action=nil
-	end
-end
-
-function print_table(msg,g)
-	printh(msg)
-	for k,v in pairs(g) do
-		if type(v) == "table" then
-			print_table(""..k..":{",v)
-			printh("}")
-		elseif type(v)=="boolean" then
-				if v then
-					printh(""..k.."=true")
-				else
-					printh(""..k.."=false")
-				end
-		else
-			if type(v)=="function" then
-				v="["..type(v).."]"
-			end
-			printh(""..k.."="..v)
-		end
 	end
 end
 
@@ -648,11 +625,15 @@ end
 slash_move=nil
 bash_move=nil
 function init_moves()
+	--defaults
+	local r_anim={33,33,34,34,35,35,36,36}
+ --local t_anim={16,16,17,17,18}
+
 slash_move={
 	icon=23,
 	icon_disabled=24,
 	t_anim={16,16,17,17,18},
-	r_anim={33,33,34,34,35,35,36,36},
+	r_anim=r_anim,
 	s_anim=nil, --optional
 	sound=0,
 	name="slash",
