@@ -17,7 +17,8 @@ game_state={
 	dungeon=1,
 	combat=2,
 	inventory=3,
-	swap=4
+	swap=4,
+	wait=5
 }
 anim_c=0
 state=game_state.dungeon
@@ -101,6 +102,9 @@ function _update()
 	elseif state==game_state.swap
 		then
 		swap_mode()
+	elseif state==game_state.wait
+		then
+		wait_mode()
 	end
 	
 	--play shorts
@@ -503,6 +507,7 @@ function print_logs()
 end
 
 
+
 -->8
 --specs,defs,spawns
 
@@ -768,7 +773,7 @@ slash_move={
 	dmg=2,
 	splash=false,
 	spin=false,
-	lock=30,
+	lock=20,
 	cooldown=20,
 	targets=4,
 	ttl=20,
@@ -1305,7 +1310,7 @@ function in_hitbox(e,sw)
 	m=sw.hitbox/2.0
 	local xd=abs(e.x-sw.x)
 	local yd=abs(e.y-sw.y)
-	if anim_c%3==0
+	if anim_c%8==0
 		then
 		rect(sw.x-m,sw.y-m,sw.x+m,
 			sw.y+m,14)
@@ -1794,8 +1799,12 @@ page_tab={
 }
 
 function trigger_swap(g)
+	next_state=game_state.swap
+	wait_time=40
+	wait_msg=
+"enter swap, please release keys"
 	swap_gear=g
-	state=game_state.swap
+	state=game_state.wait
 end
 
 function status_mode()
@@ -1818,35 +1827,35 @@ function swap_mode()
 		g2.seed="nil"
 	end
 	print("seed:"..g1.seed.."->"..g2.seed)
-	y=20
+	y=18
 	print("name:",0,y,7)
 	print(""..g1.name,20,y,7)
 	print("->",50,y,7)
 	print(""..g2.name,60,y,7)
-	y+=8
+	y+=6
 	print_compare("patk",
 		g1.patk,g2.patk,p1.patk,y)
-	y+=8
+	y+=6
 	print_compare("pspd",
 		g1.pspd,g2.pspd,p1.pspd,y)
-	y+=8
+	y+=6
 	print_compare("pdef",
 		g1.pdef,g2.pdef,p1.pdef,y)
-	y+=8
+	y+=6
 	print_compare("ablt",
 		g1.ablt,g2.ablt,p1.ablt,y)
-	y+=8
+	y+=6
 	print_compare("wspd",
 		g1.wspd,g2.wspd,p1.wspd,y)
-	y+=8
+	y+=6
 	print_compare("luck",
 		g1.luck,g2.luck,p1.luck,y)
-	y+=8
+	y+=6
 	if #g1.moves>0 or #g2.moves>0
 		then
 		print("moves:",0,y,7)
 	end
-	y+=8
+	y+=6
 	for i=1,max(#g1.moves,#g2.moves) do
 		local m1=g1.moves[i]
 		local m2=g2.moves[i]
@@ -1856,10 +1865,14 @@ function swap_mode()
 		if m2==nil then
 			m2={name="empty move"}
 		end
-		print(""..m1.name,4,y,7)
+		local col=7
+		if m1.name==m2.name then
+			col=8
+		end
+		print(""..m1.name,2,y,col)
 		print("->", 50,y,7)
-		print(""..m2.name,60,y,7)
-		y+=8
+		print(""..m2.name,60,y,col)
+		y+=6
 	end
 	print(
 "❎ to swap,⬅️ to leave behind",
@@ -1903,6 +1916,37 @@ function print_compare(lbl,old,
 	print(""..t_r..paren_r,
 		60,y,rc)
 end
+
+next_state=nil
+wait_time=nil
+wait_msg=""
+function wait_mode()
+	cls()
+	if wait_time==nil then
+		return
+	end
+	if wait_time<0 then
+		wait_time=nil
+		state=next_state
+		return
+	end
+	color(7)
+	print(wait_msg)
+	wait_time-=1
+end
+-->8
+--map generation
+
+function gen_room_1()
+	
+end
+
+function gen_room()
+		
+end
+
+
+
 __gfx__
 00000000777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000060007777777777777777
 00000000772227777722277777222777772227777777777777777777777777777700077777000777770007777700077777777777000660007700077777000777
