@@ -990,8 +990,6 @@ function p_x_filled(p)
 	return true
 end
 
-
-
 --only for player
 function p_x_move()
 	m=p1.x_move_act
@@ -1015,54 +1013,6 @@ function recalc_stats(e)
 		e.wspd+=t.wspd
 	end
 end
-
-
---last edge colliding on 
---1st set of coordinates
-last_edge_top=nil
-last_edge_bottom=nil
-last_edge_right=nil
-last_edge_left=nil
-function check_col(x1,y1,w1,h1,
-										x2,y2,w2,h2)
-	x_col=false
-	right=
-		x1<=x2+w2 and x1>x2
-	if right then
-		x_col=true
-	end
- left=
-		x1+w1>=x2 and x1<=x2+w2
-	if left then
-		x_col=true
-	end
-	y_col=false
-	top=
-		y1<=y2+h2 and y1>y2
-	if top then
-		y_col=true
-	end
-	bottom=
-		y1+h1>=y2 and y1<=y2+h2
-	if bottom then
-		y_col=true
-	end
-	
-	if x_col and y_col then
-		last_edge_right=right
-		last_edge_left=left
-		last_edge_top=top
-		last_edge_bottom=bottom
-		return true
-	else
-		last_edge_right=false
-		last_edge_top=false
-		last_edge_bottom=false
-		last_edge_left=false
-		return false
-	end
-end
-
 
 
 function c_draw_player()
@@ -1094,40 +1044,6 @@ function c_draw_entities()
 	end
 end
 
-bullets={}
---produces a circular array
---of bullets
-function do_bounce_act()
-	for ang=0,1.0,0.1 do
-		b.x-=b.speed*cos(ang)
-		b.y-=b.speed*sin(ang)
-	end
-end
-
---follows a fixed line 
---toward end position
-function step_line(b)
-	if b.xstart==nil then
-		b.xstart=b.x
-	end
-	if b.ystart==nil then
-		b.ystart=b.y
-	end
-	xd=b.xstart-b.xend
-	yd=b.ystart-b.yend
-	
-	ang=atan2(xd,yd)
-	b.x-=b.speed*cos(ang)
-	b.y-=b.speed*sin(ang)	
-	return b	
-end
-
-function c_bullets_control()
-	--ang=atan2(xd,yd)
-	b.x-=b.speed*cos(ang)
-	b.y-=b.speed*sin(ang)	
-	return b	
-end
 
 function draw_backdrop()
 	sz=32
