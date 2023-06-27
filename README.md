@@ -2,6 +2,13 @@
 
 You descend into The Realm. Endless floor after endless floor, there is loot to be discovered and enemies to slay. Your sanity may be harder to keep a handle on than would be expected. Choose your battles carefully and keep in mind that sometimes you're having an unlucky 
 
+# Controls
+
+* arrow keys -- move
+* X -- attack
+* Z (while not moving) -- action menu (press arrow key to select action)
+* Z+X -- parry attack
+
 # Game Notes
 
 This is just a place to write out some notes, reading them would be helpful for devs of the game, but also to players as well..
@@ -65,5 +72,7 @@ If the same action is provided from multiple pieces of gear, the action is impro
 There is a unique parry mechanic. It is triggered by using your primary attack at the exact time a bullet hits the player. If the parry is successful then your primary move is recharged, you take no damage for several seconds, and the enemy which did the attack takes some damage. If the parry was attempted but unsuccessful (too slow or too fast) then the move charge is consumed and damage taken is increased. Parrying is only an available option if you have a move you can use (enough energy). 
 
 Failing a parry has an effect on sanity. Enemies can also parry attacks from the player, using the luck stat. When the player's attack is parried the amount of damage the attack would've done is returned to the player as damage. Most enemies are expected to have very low luck stats so that this is very improbable, but certain side bosses may require the player going against a lucky advesary. The specific strategy best would be to have good attacks but not too good that could one-shot the player.
+
+As sanity decreases, the typical visuals for parrying begin to become less and less precise or not appearing at all
 
 
