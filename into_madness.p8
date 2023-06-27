@@ -1863,7 +1863,7 @@ page_tab={
 
 function trigger_swap(g)
 	next_state=game_state.swap
-	wait_time=40
+	wait_time=20
 	wait_msg=
 "enter swap, please release keys"
 	swap_gear=g

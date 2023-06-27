@@ -6,8 +6,35 @@ You descend into The Realm. Endless floor after endless floor, there is loot to 
 
 * arrow keys -- move
 * X -- attack
-* Z (while not moving) -- action menu (press arrow key to select action)
+* Z (hold while not moving) -- action menu (press arrow key to select action)
 * Z+X -- parry attack
+
+
+# Stat Rework
+
+The idea here is to have several stats but not so many that you can't keep up. Each stat should have a clear "if I focus on this, it could be a really good thing". 
+
+* PATK -- physical attack damage
+* PDEF -- physical damage reduction/defense
+* AGLT -- agility. How fast ENG is recharged, walk speed
+* FOCS -- focus. How fast CLR is recharged, cool down of weapon moves
+* LUCK -- luck.
+
+# Player Aspects
+
+The player has 3 "aspects". Each aspect is like a different party member and if one aspect "dies" then it will switch to a different aspect. 
+There's three aspects. The first 2 are provided from game start and are freely swappable
+
+1. FIGHT --optimized for DPS, faster ENG generation
+2. REACT --optimized for actions, faster CLR generation. No attack, only parry
+3. BREAK --caused by low sanity, ???
+
+# Move cards
+
+Moves and actions are each on cards. The primary move can be assigned by selecting a move. This card is not discarded once used, it can be used continually as long as ENG requirements are met. Actions and moves which are not the primary are discarded "back into the deck" after usage.
+
+
+
 
 # Game Notes
 
