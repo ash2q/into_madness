@@ -884,6 +884,7 @@ function combat_mode()
 	parry_dmg_mul=1
 	parry_rdmg_mul=0
 	process_swings_2()
+	track_inputs()
 	c_player_control()
 	for e in all(entities) do
 		c_enemy_control(e)
@@ -934,7 +935,7 @@ function c_enemy_control(e)
 	end
 end
 
-
+double_press=0
 function c_player_control()
 	x_used=false
 	xold=p1.x
@@ -960,6 +961,7 @@ function c_player_control()
 	if btnp(5) then
 		--primary
 		p_x_move()
+		--if double_press
 	end
 	
 	--compensate diagnol moves
@@ -1142,6 +1144,68 @@ function draw_backdrop()
 	
 	line(0,68,128,68,5)
 end
+
+
+tix_buffer_sz=10
+tix_buffer={}
+tiz_buffer_sz=10
+tiz_buffer={}
+tap_delay_min=1
+tap_delay_max=6
+--todo this is an awful way
+--of doing this, but it works
+--for now...
+function track_inputs()
+	local tmp={}
+	tmp[1]=btn(❎)
+	for i=1,tix_buffer_sz do
+		tmp[i+1]=tix_buffer[i]
+	end
+	tix_buffer=tmp
+	local tmp={}
+	tmp[1]=btn(🅾️)
+	for i=1,tiz_buffer_sz do
+		tmp[i+1]=tiz_buffer[i]
+	end
+	tiz_buffer=tmp
+end
+
+function ti_humps(buf)
+	local humps=0
+	local prev=false
+	local in_h=false
+	for i=0,#buf do
+		if in_h then
+			if not buf[i] then
+				in_h=false
+			end
+		else
+			if buf[i] then
+				if prev then
+					in_h=true
+				else
+					in_h=true
+					humps+=1
+				end
+			end 
+		end --end if not in_h
+		prev=buf[h]
+	end
+end
+
+function x_single_tap()
+	
+end
+function x_held()
+end
+function x_double_tap()
+end
+
+
+
+
+
+
 -->8
 --hud and swings
 
@@ -1459,7 +1523,7 @@ function process_swing(sw)
 				--sw.target.luck*10>rnd(1000)) 
 			then
 			if sw.parry_hold==nil then
-				sw.parry_hold=15
+				sw.parry_hold=5
 			end
 			if sw.parry_hold>0 then
 				sw.parry_hold-=1
