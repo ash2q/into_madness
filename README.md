@@ -25,16 +25,17 @@ The idea here is to have several stats but not so many that you can't keep up. E
 The player has 3 "aspects". Each aspect is like a different party member and if one aspect "dies" then it will switch to a different aspect. 
 There's three aspects. The first 2 are provided from game start and are freely swappable
 
-1. FIGHT --optimized for DPS, faster ENG generation
-2. REACT --optimized for actions, faster CLR generation. No attack, only parry
+1. FIGHT --optimized for DPS, faster ENG generation. normal CLR generation but only when not attacking
+2. REACT --optimized for actions, faster CLR generation. Slow ENG generation, can parry
 3. BREAK --caused by low sanity, ???
 
-# Move cards
+# Moves And Actions
 
-Moves and actions are each on cards. The primary move can be assigned by selecting a move. This card is not discarded once used, it can be used continually as long as ENG requirements are met. Actions and moves which are not the primary are discarded "back into the deck" after usage.
+Moves are considered to be quick reflex like movements, which can be done rapidly and only cost ENG. Actions are considered to be more methodical and careful decisions made in response to a situation. 
 
+Moves are used by the FIGHT aspect, while actions are used by the REACT aspect. 
 
-
+Armor and weapons always include at least one move and one action. 
 
 # Game Notes
 
