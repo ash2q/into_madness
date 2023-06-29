@@ -466,24 +466,12 @@ end
 
 function rebuild_player(e)
 	rebuild_entity(e)
-	if e.x_move_atk!=nil and
+	if e.selected_move!=nil and
 			not contains(
-				e.moves,e.x_move_atk) 
+				e.moves,e.selected_move) 
 		then
 		--if #e.moves==0
-		e.x_move_atk=nil --e.m0ves[0]
-	end
-	if e.x_move_act!=nil and
-			not contains(
-				e.moves,e.x_move_act) 
-		then
-		e.x_move_act=nil --e.moves[0]
-	end
-	if e.z_action!=nil and
-			not contains(
-				e.moves,e.z_action) 
-		then
-		e.z_action=nil
+		e.selected_move=nil --e.m0ves[0]
 	end
 end
 
@@ -551,15 +539,9 @@ p1={
 	inv_count=0,
 	--populated by equips
 	moves={},
-	actions={},
 	gear={},
-	--mapped to ❎ in atk mode
-	x_move_atk={},
-	--mapped to ❎ in act mode
-	x_move_act={},
-	--mapped to 🅾️ in act mode
-	z_action={},
-	atk_mode=true,
+	--mapped to ❎ in fight mode
+	selected_move={},
 	idle=20,
 	acts={}
 }
@@ -585,7 +567,6 @@ empty_gear={
 	wspd=0,
 	luck=0,
 	moves={},
-	actions={}
 }
 
 e_slime={}
@@ -600,7 +581,6 @@ function init_tb_enemies()
 		c_anim={74,76},
 		health=10,
 		moves={bash_move},
-		actions={bounce_act},
 		tb_move=tb_move_still,
 		--energy(moves)
 		eng=0,
@@ -613,7 +593,6 @@ function init_tb_enemies()
 		ai=slime_ai,
 		--populated by equips
 		moves={},
-		actions={},
 		gear={},
 	}
 end
@@ -655,7 +634,6 @@ function init_gear()
 		wspd=1,
 		luck=1,
 		moves={slash_move},
-		actions={}
 	}
 	pri_sword={
 		icon=13,
@@ -669,7 +647,6 @@ function init_gear()
 "special honestly, but feels good\n"..
 "in your hand",
 		moves={slash_move},
-		actions={}
 	}
 	--roll_stats(pri_sword,40)
 		add_loot(pri_sword)
@@ -684,7 +661,6 @@ function init_gear()
 "a primitive spear. seems pretty\n"..
 "basic. faster than expected.",
 		moves={bash_move},
-		actions={}
 	}
 	--roll_stats(pri_spear,40)
 	add_loot(pri_spear)
@@ -842,8 +818,7 @@ function setup_combat()
 	p1.y=70
 	p1.moved=false
 	--p1.moves={slash_move}
-	p1.x_move_atk=p1.moves[1]
-	p1.x_move_act=p1.moves[1]
+	p1.selected_move=p1.moves[1]
 	
 	--print_table("-----player 1-----"
 	--	,p1)
@@ -947,7 +922,7 @@ function c_player_control()
 	yvel=0
 	xvel=0
 	if z_hold then
-		if btn(0)	then
+		if btn(0) then
 			--execute dial actions
 		elseif btn(1) then
 		elseif btn(2) then
@@ -986,7 +961,7 @@ function c_player_control()
 	end
 	if btnp(5) and not btn(4) then
 		--primary
-		p_x_move()
+		p_swing()
 		--if double_press
 	end
 	
@@ -1003,12 +978,9 @@ function c_player_control()
 	p1.y+=yvel
 end
 
-function p_x_filled(p)
-	m=p.x_move_act
-	assert(m!=nil)
-	if p.atk_mode then
-		m=p.x_move_atk
-	end
+function eng_full(p)
+	m=p1.selected_move
+	--assert(m!=nil)
 	if m==nil then return false end
 	if m.cost>e.eng then
 		return false
@@ -1017,11 +989,8 @@ function p_x_filled(p)
 end
 
 --only for player
-function p_x_move()
-	m=p1.x_move_act
-	if p1.atk_mode then
-		m=p1.x_move_atk
-	end
+function p_swing()
+	m=p1.selected_move
 	player_swing(m)
 end
 
@@ -1157,15 +1126,11 @@ function draw_hud()
 	print("❎:",2,5,7)
 	palt(0,true)
 	rect(14,2,22,11,6)
-	if p1.eng >= p1.max_eng then
-		rectfill(15,3,21,10,3)
-	end
-	m=nil
-	if p1.atk_mode then
-		m=p1.x_move_atk
-	else
-		m=p1.x_move_act
-	end
+	--if p1.eng >= p1.max_eng then
+	--	rectfill(15,3,21,10,3)
+	--end
+	local m=nil
+	m=p1.selected_move
 	if m!=nil then
 		local s=m.icon
 		if m.eng_cost>p1.eng then
@@ -1174,17 +1139,11 @@ function draw_hud()
 		spr(s,15,3)
 	end
 
+
 	palt(0,false)
-	print("🅾️:",40,4,7)
 	
-	--p1.strat=true
-	if p1.atk_mode then
-		rectfill(109,3,121,9,0)
-		print("atk",110,4,11)
-	else
-		rectfill(109,3,121,9,12)
-		print("act",110,4,10)
-	end
+	meter(p1.eng,p1.max_eng,
+		40,4,7)
 	
 	draw_log()
 	draw_sanity()
@@ -1263,24 +1222,6 @@ function meter(v,mx,x,y,col)
 		col)
 end
 
---this meter is used on
---moves and action icons
---todo!
-function icn_meter(v,mx,x,y,col)
-	x1=x
-	x2=x+12
-	y1=y
-	y2=y+5
-	--black box
-	--rectfill(x1,y1,x2,y2,5)
-	--draw bar
-	o=12.0*((v+.0)/mx)
-	rectfill(
-		x,y,
-		x+o,
-		y+5,
-		col)
-end
 
 function draw_dial()
 	local c=anim_c%3
