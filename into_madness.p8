@@ -18,7 +18,8 @@ game_state={
 	combat=2,
 	inventory=3,
 	swap=4,
-	wait=5
+	wait=5,
+	equip=6
 }
 anim_c=0
 state=game_state.dungeon
@@ -96,9 +97,9 @@ function _update()
 	elseif state==game_state.combat
 		then
 		combat_mode()
-	elseif state==game_state.status
+	elseif state==game_state.equip
 		then
-		status_mode()
+		equip_mode()
 	elseif state==game_state.swap
 		then
 		swap_mode()
@@ -291,7 +292,7 @@ function tb_controls()
 	elseif btnp(3) then
 		tb_mv_down(p1)
 	elseif btnp(4) then
-		--inventory
+		state=game_state.equip
 	elseif btnp(5) then
 		--use item?
 	end
@@ -459,9 +460,10 @@ function calc_stats(ent)
 	end
 end
 
+
 function rebuild_lists(ent)
 	ent.moves={}
-	ent.actions={}
+	ent.mcount={}
 	for g in all(ent.gear) do
 		--assert(g.moves!=nil)
 		for m in all(g.moves) do
@@ -469,16 +471,15 @@ function rebuild_lists(ent)
 					ent.moves,m)
 				then
 				add(ent.moves,m)
+				if ent.mcount[m.name]==nil
+					then
+					ent.mcount[m.name]=0
+				end
+				ent.mcount[m.name]+=1
 			end
 		end --for m
-		for a in all(g.actions) do
-			if not contains(
-					ent.actions,a)
-				then
-				add(ent.actions,a)
-			end
-		end --for a
 	end
+		
 end
 
 function rebuild_entity(e)
@@ -1919,8 +1920,17 @@ function trigger_swap(g)
 	state=game_state.wait
 end
 
-function status_mode()
-	
+function equip_mode()
+	cls()
+	local y=16
+	for m in all(p1.moves) do
+		local c=0
+		c=p1.mcount[m.name]
+		msg=m.name.." x"..c
+		print(msg,16,y,7)
+		
+		y+=8
+	end
 end
 
 swap_gear=nil
