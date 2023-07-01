@@ -15,18 +15,23 @@ function trigger_swap(g)
 	state=game_state.wait
 end
 
+
+eq_line=1
 function equip_mode()
 	cls()
+	reset()
 	local y=16
 	for m in all(p1.moves) do
 		local c=0
 		c=p1.mcount[m.name]
 		msg=m.name.." x"..c
 		print(msg,16,y,7)
-		
 		y+=8
 	end
+	spr(55,6,14+(8*(eq_line-1)))
 end
+
+
 
 swap_gear=nil
 function swap_mode()
