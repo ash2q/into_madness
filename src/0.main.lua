@@ -32,6 +32,7 @@ slot_num={
 	boots=7,
 	necklace=8
 }
+
 slot_names={  --slots:
 	"intrinsic", --1
 	"primary",   --2

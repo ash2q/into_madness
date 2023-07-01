@@ -35,6 +35,7 @@ slot_num={
 	boots=7,
 	necklace=8
 }
+
 slot_names={  --slots:
 	"intrinsic", --1
 	"primary",   --2
@@ -580,8 +581,9 @@ p1={
 	idle=20,
 	acts={},
 	fight_aspect={},
-	p_type=1
-		
+	p_type=1,
+	c_move_anim={128,130,132,134},
+	c_anim={128,128,134,134},	
 }
 p1_aspect={
 	fight=1,
@@ -638,6 +640,7 @@ tb_anim_chest={38,38}
 function init_tb()
 	e_slime={
 		name="slime",
+		intrinsic=int_slime,
 		etype=1, --todo
 		faction=1,
 		tb_anim={6,6,7,7},
@@ -661,6 +664,7 @@ function init_tb()
 	}
 	e_splicer={
 		name="splicer",
+		intrinsic=int_splicer,
 		etype=1, --todo
 		faction=1,
 		tb_anim={43,43,44,44},
@@ -707,6 +711,7 @@ function init_actions()
 end
 
 int_slime=nil
+int_splicer=nil
 pri_sword=nil
 pri_spear=nil
 loot_pool={}
@@ -714,8 +719,6 @@ loot_pool={}
 function add_loot(l)
 	add(loot_pool,l)
 end
-
-
 function init_gear()
 	init_moves()
 	int_slime={
@@ -774,33 +777,30 @@ function init_gear()
 	
 end
 
-
-	
-
-function spawn_slime(x,y)
+function spawn_enemy(spec,x,y)
 	local e={
 		tb_t=tb_type.enemy,
 		tb_x=x,
 		tb_y=y,
 	}
-	copy_into(e,e_slime)
+	copy_into(e,spec)
 	init_gear_slots(e)
-	equip(e,int_slime)
+	if e.intrinsic!=nil then
+		equip(e,e.intrinsic)
+	else
+		assert(false)
+	end
 	rebuild_entity(e)
 	tb_add_entity(e)
 end
+	
+
+function spawn_slime(x,y)
+	spawn_enemy(e_slime,x,y)
+end
 
 function spawn_splicer(x,y)
-	local e={
-		tb_t=tb_type.enemy,
-		tb_x=x,
-		tb_y=y,
-	}
-	copy_into(e,e_splicer)
-	init_gear_slots(e)
-	equip(e,int_splicer)
-	rebuild_entity(e)
-	tb_add_entity(e)
+	spawn_enemy(e_splicer,x,y)
 end
 function spawn_gear(g,x,y)
 	local e={
