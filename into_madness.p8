@@ -530,9 +530,6 @@ function print_logs()
 		print(log_msgs[l-i],1,120-(i*8),7)
 	end
 end
-
-
-
 -->8
 --specs,defs,spawns
 
@@ -923,7 +920,6 @@ function calc_attributes(e)
 	e.clr_max=50+(e.ablt*2)
 	e.speed=0.5+(e.wspd/10)
 end
-
 -->8
 --combat
 
@@ -1284,12 +1280,6 @@ function x_held()
 end
 function x_double_tap()
 end
-
-
-
-
-
-
 -->8
 --hud and swings
 
@@ -1750,7 +1740,6 @@ function draw_swings()
 			--todo source animation
 	end
 end
-
 -->8
 --parry and enemy ai
 
@@ -1968,9 +1957,6 @@ function slime_ai(e)
 	
 	
 end
-
-
-
 -->8
 --use, swap, status mode
 
@@ -2200,9 +2186,8 @@ function gen_room()
 		end
 	end
 end
-
-
-
+-->8
+--testing stuff??
 __gfx__
 00000000777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000060007777777777777777
 00000000772227777722277777222777772227777777777777777777777777777700077777000777770007777700077777777777000660007700077777000777
