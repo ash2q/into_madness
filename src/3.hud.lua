@@ -1,7 +1,13 @@
 --hud and swings
 
 function draw_hud()
-	rectfill(0,0,128,12,0)
+	local col=0
+	if p1.p_type==p1_aspect.react then
+		col=14
+	elseif p1.p_type==p1_aspect.fight then
+		col=12
+	end
+	rectfill(0,0,128,12,col)
 	color(7)
 	print("❎:",2,5,7)
 	palt(0,true)
@@ -29,14 +35,20 @@ function draw_hud()
 	end
 	meter(p1.eng,p1.max_eng,
 		40,4,col)
+	print("clr:", 60,5,7)
+	col=7
+	if p1.clr>=p1.max_clr then
+		col=11
+	end
+	meter(p1.clr,p1.max_clr,75,4,col)
 	
 	draw_log()
 	draw_sanity()
 end
 
 function draw_sanity()
-	print("self:",78,4,7)
-	rect(98,1,107,10,6)
+	print("self:",98,4,7)
+	rect(118,1,127,10,6)
 	local s=48
 	if sanity<80 then
 		s=49
@@ -52,7 +64,7 @@ function draw_sanity()
 	end
 	--palt(0,false)
 	palt(7,false)
-	spr(s,99,2)
+	spr(s,119,2)
 	palt(7,true)
 end
 
@@ -111,7 +123,7 @@ end
 function draw_dial()
 	local c=anim_c%3
 	--up
-	local a=p1.moves[3]
+	local a=p1.efforts[3]
 	local t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -124,7 +136,7 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--left
-	a=p1.moves[1]
+	a=p1.efforts[1]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -137,7 +149,7 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--down
-	a=p1.moves[4]
+	a=p1.efforts[4]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -151,7 +163,7 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--right
-	a=p1.moves[2]
+	a=p1.efforts[2]
 	t="[empty]"
 	if a!=nil then
 		t=a.name

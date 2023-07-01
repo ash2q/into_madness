@@ -14,10 +14,10 @@ You descend into The Realm. Endless floor after endless floor, there is loot to 
 
 The idea here is to have several stats but not so many that you can't keep up. Each stat should have a clear "if I focus on this, it could be a really good thing". 
 
-* PATK -- physical attack damage
+* PATK -- physical attack damage.
 * PDEF -- physical damage reduction/defense
 * AGLT -- agility. How fast ENG is recharged, walk speed
-* FOCS -- focus. How fast CLR is recharged, cool down of weapon moves
+* FOCS -- focus. How fast CLR is recharged, parry damage
 * LUCK -- luck.
 
 # Player Aspects

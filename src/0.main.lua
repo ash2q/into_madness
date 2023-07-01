@@ -87,6 +87,7 @@ function _init()
 	--r=gen_sword(40)
 	--tb_spawn_gear(r,4,5)
 	--trigger_swap(sword)
+	p1:to_fight()
 	gen_room()
 end
 
@@ -167,6 +168,8 @@ end
 
 
 function tb_draw_status()
+	print("health: "..p1.health.."/"..p1.max_health,
+		8,8,7)
 	print("depth: "..tb_depth,
 		96,8,7)
 end

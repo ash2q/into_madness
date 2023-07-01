@@ -16,7 +16,11 @@ e_state={
 --😐 react mode
 --🐱 fight mode
 --☉ break mode
-
+p1_aspect={
+	fight=1,
+	react=2,
+	broken=3
+}
 p1={
 	name="player 1",
 	faction=0,
@@ -30,50 +34,39 @@ p1={
 	c_anim={64,64,72,72},
 	c_sz=2,
 	health=50,
+	max_health=100,
 	--energy and clarity
 	eng=0,
+	eng_rate=0.1,
 	max_eng=50,
 	clr=0,
+	clr_rate=0.1,
 	max_clr=50,
 	sanity=100,
 	--invincibility
 	inv_max=60,
 	inv_count=0,
 	gear={},
-	--changes between fight and
-	--react mode
-
-	
 	idle=20,
+	--efforts is either acts or moves
+	--depending on p_type
+	efforts={},
+	moves={},
 	acts={},
 	fight_aspect={},
-	p_type=1,
+	p_type=p1_aspect.fight, 
 	c_move_anim={128,130,132,134},
-	c_anim={128,128,134,134},	
+	c_anim={128,128,134,134},
+	
+	to_fight=function(self)
+		self.efforts=self.moves
+		self.p_type=p1_aspect.fight
+	end,
+	to_react=function(self)
+		self.efforts=self.acts
+		self.p_type=p1_aspect.react
+	end
 }
-p1_aspect={
-	fight=1,
-	react=2,
-	broken=3
-}
-p1_fight={
-	p_type=p1_aspect.fight,
-	moves={},
-	eng_rate=0.3,
-	clr_rate=0.1,
-	selected_move={},
-}
-p1_react={
-	p_type=p1_aspect.react,
-	moves={},
-	eng_rate=0.1,
-	clr_rate=0.2,
-	selected_move={},
-}
-p1_break={
-	p_type=p1_aspect.broken
-}
-
 
 
 int_warrior={
