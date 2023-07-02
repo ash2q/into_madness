@@ -43,7 +43,7 @@ function combat_mode()
 	cls(6)
 	palt(0,false)
 	palt(7,true)
-	--draw_backdrop()
+	draw_backdrop()
 	draw_hud()
 	--c_draw_player()
 	c_draw_entities()
@@ -187,11 +187,23 @@ function c_player_control()
 		xvel*=0.707
 		yvel*=0.707
 	end
-	p1.moved=
-		abs(xvel)>0 or abs(yvel)>0
-		
-	p1.x+=xvel
-	p1.y+=yvel
+	c_move_p1(p1.x,p1.y,xvel,yvel)
+end
+
+function c_move_p1(old_x,old_y,vel_x,vel_y)
+	local x=old_x+vel_x
+	local y=old_y+vel_y
+	--don't allow out of combat area
+	if x<8 or x>120 then
+		vel_x=0
+	end
+	if y<48 or y>92 then
+		vel_y=-0
+	end
+	
+	p1.moved=abs(vel_x)>0 or abs(vel_y)>0
+	p1.x+=vel_x
+	p1.y+=vel_y
 end
 
 function switch_aspects()
@@ -290,16 +302,16 @@ function draw_backdrop()
 	sz=32
 	--draw grid lines
 	--horizontal
-	for i=0,(64/sz) do
+	for i=0,(48/sz) do
 		line(0,i*sz,128,i*sz,5)
 	end
 	--vertical
 	i=0
 	for i=0,(64/4) do
-		line(i*sz,0,i*sz,64,5)
+		line(i*sz,0,i*sz,48,5)
 	end
 	
-	line(0,68,128,68,5)
+	line(0,48,128,48,5)
 end
 
 

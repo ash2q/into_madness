@@ -17,8 +17,10 @@ The idea here is to have several stats but not so many that you can't keep up. E
 * PATK -- physical attack damage.
 * PDEF -- physical damage reduction/defense
 * AGLT -- agility. How fast ENG is recharged, walk speed
-* FOCS -- focus. How fast CLR is recharged, parry damage
-* LUCK -- luck.
+* INT -- intelligence. How fast CLR is recharged, parry damage
+* LUCK -- luck. Critical hit %chance. 
+
+Points go from 1 to 100. One point of each stat
 
 # Player Aspects
 
