@@ -1281,16 +1281,22 @@ end
 
 function draw_hud()
 	local col=0
+	local m=""
 	if p1.p_type==p1_aspect.react then
+		m="😐"
 		col=14
 	elseif p1.p_type==p1_aspect.fight then
+		m="🐱"
 		col=12
 	end
+
 	rectfill(0,0,128,12,col)
 	color(7)
-	print("❎:",2,5,7)
 	palt(0,true)
+	rectfill(14,2,22,11,0)
 	rect(14,2,22,11,6)
+	
+	print(m,2,5,7)
 	--if p1.eng >= p1.max_eng then
 	--	rectfill(15,3,21,10,3)
 	--end
