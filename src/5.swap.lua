@@ -29,7 +29,38 @@ function equip_mode()
 		y+=8
 	end
 	spr(55,6,14+(8*(eq_line-1)))
+	eq_mode_ctrl()
 end
+
+
+
+
+function eq_mode_ctrl()
+	if btnp(⬇️) then
+		eq_line+=1
+	elseif btnp(⬆️) then
+		eq_line-=1
+	elseif btnp(❎) then
+		--equip/unequip
+	elseif btnp(🅾️) then
+		--leave menu
+	elseif btnp(⬅️) then
+		--?
+	elseif btnp(➡️) then
+		--?
+	end
+	
+	if eq_line<=0 
+		then
+		eq_line=#p1.moves
+	elseif eq_line>#p1.moves
+		then
+		eq_line=1
+	end
+end
+
+
+
 
 
 
