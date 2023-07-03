@@ -304,7 +304,8 @@ function tb_controls()
 	elseif btnp(3) then
 		tb_mv_down(p1)
 	elseif btnp(4) then
-		state=game_state.equip
+		trigger_equip_mode()
+		
 	elseif btnp(5) then
 		--use item?
 	end

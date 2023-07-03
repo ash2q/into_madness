@@ -16,6 +16,17 @@ function trigger_swap(g)
 end
 
 
+function init_equip()
+	eq_line=1
+end
+
+eq_prev_state=nil
+
+function trigger_equip_mode()
+	eq_prev_state=state
+	state=game_state.equip
+end
+
 eq_line=1
 function equip_mode()
 	cls()
@@ -25,10 +36,20 @@ function equip_mode()
 		local c=0
 		c=p1.mcount[m.name]
 		msg=m.name.." x"..c
+		local col=7
+		if p1.equipped!=nil and contains(p1.equipped, m)
+			then
+			col=3
+			print("e",8,y,col)
+		end
 		print(msg,16,y,7)
 		y+=8
 	end
-	spr(55,6,14+(8*(eq_line-1)))
+	if anim_c%2<1 then
+		spr(55,6,14+(8*(eq_line-1)))
+	else
+		
+	end
 	eq_mode_ctrl()
 end
 
@@ -44,6 +65,7 @@ function eq_mode_ctrl()
 		--equip/unequip
 	elseif btnp(🅾️) then
 		--leave menu
+		eq_leave()
 	elseif btnp(⬅️) then
 		--?
 	elseif btnp(➡️) then
@@ -59,7 +81,10 @@ function eq_mode_ctrl()
 	end
 end
 
-
+function eq_leave()
+	init_equip()
+	state=eq_prev_state
+end
 
 
 
