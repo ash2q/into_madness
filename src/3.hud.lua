@@ -129,7 +129,7 @@ end
 function draw_dial()
 	local c=anim_c%3
 	--up
-	local a=p1.efforts[3]
+	local a=p1.equips[3]
 	local t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -142,20 +142,20 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--left
-	a=p1.efforts[1]
+	a=p1.equips[1]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
 	end
 	x=8
- y=44
+ 	y=44
 	rectfill(x,y,x+40,y+8,0)
 	if c==0 then
 		spr(41,x+43,y+1)
 	end
 	print(t,x+1,y+2,7)
 	--down
-	a=p1.efforts[4]
+	a=p1.equips[4]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -169,7 +169,7 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--right
-	a=p1.efforts[2]
+	a=p1.equips[2]
 	t="[empty]"
 	if a!=nil then
 		t=a.name

@@ -148,28 +148,25 @@ function c_player_control()
 		--menu (actions)
 		dial_display=true
 		z_hold=true
-		if btn(⬅️) and 
-				p1.moves[1]!=nil then
-			p1.selected_move=
-				p1.moves[1]
+		local num=0
+		if btn(⬅️) then
+			num=1
 			dial_display=false
-		elseif btn(➡️) and
-				p1.moves[2]!=nil then
-			p1.selected_move=
-				p1.moves[2]
+		elseif btn(➡️) then
+			num=2
 			dial_display=false
-		elseif btn(⬆️) and
-				p1.moves[3]!=nil then
-			p1.selected_move=
-				p1.moves[3]
+		elseif btn(⬆️) then
+			num=3
 			dial_display=false
-		elseif btn(⬇️) and
-				p1.moves[4]!=nil then
-			p1.selected_move=
-				p1.moves[4]
+		elseif btn(⬇️) then
+			num=4
 			dial_display=false
 		elseif not btn(🅾️) then
 			dial_display=false
+		end
+		if num!=nil and p1.equips[num]!=nil 
+			then
+			p1.selected_move=p1.equips[num]	
 		end
 	else
 		z_hold=false

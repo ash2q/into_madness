@@ -37,12 +37,12 @@ function equip_mode()
 		c=p1.mcount[m.name]
 		msg=m.name.." x"..c
 		local col=7
-		if p1.equipped!=nil and contains(p1.equipped, m)
+		if contains(p1.equips, m)
 			then
-			col=3
+			col=11
 			print("e",8,y,col)
 		end
-		print(msg,16,y,7)
+		print(msg,16,y,col)
 		y+=8
 	end
 	if anim_c%2<1 then
@@ -63,6 +63,13 @@ function eq_mode_ctrl()
 		eq_line-=1
 	elseif btnp(❎) then
 		--equip/unequip
+		local m1=p1.moves[eq_line]
+		if contains(p1.equips,p1.moves[eq_line])
+			then
+			del(p1.equips, m1)
+		elseif #p1.equips<=3 then
+			add(p1.equips, m1)
+		end
 	elseif btnp(🅾️) then
 		--leave menu
 		eq_leave()

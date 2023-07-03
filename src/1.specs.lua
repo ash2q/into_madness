@@ -22,7 +22,7 @@ p1_aspect={
 	broken=3
 }
 p1={
-	name="player 1",
+	name="p1",
 	faction=0,
 	tb_anim={128,128,134,134},
 	tb_spr_size=2,
@@ -53,6 +53,7 @@ p1={
 	efforts={},
 	moves={},
 	acts={},
+	equips={},
 	fight_aspect={},
 	p_type=p1_aspect.fight, 
 	c_move_anim={128,130,132,134},

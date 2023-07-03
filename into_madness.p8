@@ -560,7 +560,7 @@ p1_aspect={
 	broken=3
 }
 p1={
-	name="player 1",
+	name="p1",
 	faction=0,
 	tb_anim={128,128,134,134},
 	tb_spr_size=2,
@@ -591,6 +591,7 @@ p1={
 	efforts={},
 	moves={},
 	acts={},
+	equips={},
 	fight_aspect={},
 	p_type=p1_aspect.fight, 
 	c_move_anim={128,130,132,134},
@@ -1068,28 +1069,25 @@ function c_player_control()
 		--menu (actions)
 		dial_display=true
 		z_hold=true
-		if btn(⬅️) and 
-				p1.moves[1]!=nil then
-			p1.selected_move=
-				p1.moves[1]
+		local num=0
+		if btn(⬅️) then
+			num=1
 			dial_display=false
-		elseif btn(➡️) and
-				p1.moves[2]!=nil then
-			p1.selected_move=
-				p1.moves[2]
+		elseif btn(➡️) then
+			num=2
 			dial_display=false
-		elseif btn(⬆️) and
-				p1.moves[3]!=nil then
-			p1.selected_move=
-				p1.moves[3]
+		elseif btn(⬆️) then
+			num=3
 			dial_display=false
-		elseif btn(⬇️) and
-				p1.moves[4]!=nil then
-			p1.selected_move=
-				p1.moves[4]
+		elseif btn(⬇️) then
+			num=4
 			dial_display=false
 		elseif not btn(🅾️) then
 			dial_display=false
+		end
+		if num!=nil and p1.equips[num]!=nil 
+			then
+			p1.selected_move=p1.equips[num]	
 		end
 	else
 		z_hold=false
@@ -1421,7 +1419,7 @@ end
 function draw_dial()
 	local c=anim_c%3
 	--up
-	local a=p1.efforts[3]
+	local a=p1.equips[3]
 	local t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -1434,20 +1432,20 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--left
-	a=p1.efforts[1]
+	a=p1.equips[1]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
 	end
 	x=8
- y=44
+ 	y=44
 	rectfill(x,y,x+40,y+8,0)
 	if c==0 then
 		spr(41,x+43,y+1)
 	end
 	print(t,x+1,y+2,7)
 	--down
-	a=p1.efforts[4]
+	a=p1.equips[4]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -1461,7 +1459,7 @@ function draw_dial()
 	end
 	print(t,x+1,y+2,7)
 	--right
-	a=p1.efforts[2]
+	a=p1.equips[2]
 	t="[empty]"
 	if a!=nil then
 		t=a.name
@@ -2024,12 +2022,12 @@ function equip_mode()
 		c=p1.mcount[m.name]
 		msg=m.name.." x"..c
 		local col=7
-		if p1.equipped!=nil and contains(p1.equipped, m)
+		if contains(p1.equips, m)
 			then
-			col=3
+			col=11
 			print("e",8,y,col)
 		end
-		print(msg,16,y,7)
+		print(msg,16,y,col)
 		y+=8
 	end
 	if anim_c%2<1 then
@@ -2050,6 +2048,13 @@ function eq_mode_ctrl()
 		eq_line-=1
 	elseif btnp(❎) then
 		--equip/unequip
+		local m1=p1.moves[eq_line]
+		if contains(p1.equips,p1.moves[eq_line])
+			then
+			del(p1.equips, m1)
+		elseif #p1.equips<=3 then
+			add(p1.equips, m1)
+		end
 	elseif btnp(🅾️) then
 		--leave menu
 		eq_leave()
