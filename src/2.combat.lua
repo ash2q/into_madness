@@ -120,7 +120,7 @@ function c_player_control()
 	if z_hold then
 		if btn(0) then
 			--execute dial actions
-			switch_aspects()
+			--switch_aspects()
 		elseif btn(1) then
 		elseif btn(2) then
 		elseif btn(3) then

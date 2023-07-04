@@ -4,5 +4,13 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"editor.tabSize": 1,
+		"editor.fontSize": 16,
+		"editor.hover.delay": 500,
+		"editor.linkedEditing": true,
+		"editor.insertSpaces": false,
+		"editor.wordWrapColumn": 32,
+		"editor.wordWrap": "bounded"
+	}
 }

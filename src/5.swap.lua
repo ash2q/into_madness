@@ -35,21 +35,41 @@ function equip_mode()
 	for m in all(p1.moves) do
 		local c=0
 		c=p1.mcount[m.name]
-		msg=m.name.." x"..c
+		local lvl=flr(c/2+1)
+		msg=m.name.."(lvl: "..lvl..")"
 		local col=7
 		if contains(p1.equips, m)
 			then
 			col=11
-			print("e",8,y,col)
+			print("e",2,y,col)
 		end
-		print(msg,16,y,col)
+		print(msg,9,y,col)
 		y+=8
 	end
 	if anim_c%2<1 then
-		spr(55,6,14+(8*(eq_line-1)))
+		spr(55,0,14+(8*(eq_line-1)))
 	else
-		
 	end
+	local m=p1.moves[eq_line]
+	--bottom text (description)
+	rect(0,96,127,127,7)
+	print(m.desc,2,98,7)
+	--side text (stats)
+	rect(80,10,127,82,7)
+	local y=12
+	print("costs:",82,y,7)
+	y+=8
+	print(" eng: "..m.eng_cost,82,y,7)
+	y+=8
+	print(" clr: "..m.clr_cost,82,y,7)
+	y+=8
+	print("range:"..m.range,82,y,7)
+	y+=8
+	print("damage:"..m.dmg,82,y,7)
+	y+=8
+	print("targets:"..m.targets,82,y,7)
+	y+=8
+	print("lock-on:"..m.lock,82,y,7)
 	eq_mode_ctrl()
 end
 

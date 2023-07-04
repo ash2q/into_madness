@@ -46,11 +46,11 @@ function gen_room()
  add(entities,p1)
 	for y=0,8 do
 		for x=0,8 do
-			if rnd()<0.3 then
+			if rnd()<(0.1+0.05*tb_depth) then
 				spawn_rnd_enemy(x,y)
-				if rnd()<0.1 then
+				if rnd()<0.05 then
 					spawn_rnd_enemy(x,y)
-					if rnd()<0.1 then
+					if rnd()<0.05 then
 						spawn_rnd_enemy(x,y)
 					end
 				end

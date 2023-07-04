@@ -324,6 +324,10 @@ slash_move={
 	s_anim=nil, --optional
 	sound=0,
 	name="❎slash",
+	desc=
+"a broad focused slash.\n"..
+"damages several.\n\n"..
+"cut them cut them cut them",
 	eng_cost=40,
 	clr_cost=10,
 	range=10,
@@ -331,7 +335,7 @@ slash_move={
 	splash=false,
 	spin=false,
 	lock=20,
-	cooldown=20,
+	cooldown=5,
 	targets=4,
 	ttl=20,
 	delay=2
@@ -344,13 +348,17 @@ bash_move={
 	s_anim=nil, --optional
 	sound=0,
 	name="❎bash",
+	desc=
+"a brutal yet simple bash\n"..
+"simple yet subpar.\n\n"..
+"they told me to do it",
 	eng_cost=20,
 	clr_cost=0,
 	range=20,
 	dmg=1,
 	splash=false,
 	spin=false,
-	cooldown=10,
+	cooldown=5,
 	lock=0,
 	targets=1,
 	ttl=20,

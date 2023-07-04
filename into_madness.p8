@@ -862,6 +862,10 @@ slash_move={
 	s_anim=nil, --optional
 	sound=0,
 	name="❎slash",
+	desc=
+"A broad focused slash.\n"..
+"Damages several.\n\n"..
+"cut them cut them cut them",
 	eng_cost=40,
 	clr_cost=10,
 	range=10,
@@ -869,7 +873,7 @@ slash_move={
 	splash=false,
 	spin=false,
 	lock=20,
-	cooldown=20,
+	cooldown=5,
 	targets=4,
 	ttl=20,
 	delay=2
@@ -882,13 +886,17 @@ bash_move={
 	s_anim=nil, --optional
 	sound=0,
 	name="❎bash",
+	desc=
+"A brutal yet simple bash\n"..
+"simple yet subpar.\n\n"..
+"they told me to do it",
 	eng_cost=20,
 	clr_cost=0,
 	range=20,
 	dmg=1,
 	splash=false,
 	spin=false,
-	cooldown=10,
+	cooldown=5,
 	lock=0,
 	targets=1,
 	ttl=20,
@@ -1041,7 +1049,7 @@ function c_player_control()
 	if z_hold then
 		if btn(0) then
 			--execute dial actions
-			switch_aspects()
+			--switch_aspects()
 		elseif btn(1) then
 		elseif btn(2) then
 		elseif btn(3) then
@@ -2020,21 +2028,41 @@ function equip_mode()
 	for m in all(p1.moves) do
 		local c=0
 		c=p1.mcount[m.name]
-		msg=m.name.." x"..c
+		local lvl=flr(c/2+1)
+		msg=m.name.."(lvl: "..lvl..")"
 		local col=7
 		if contains(p1.equips, m)
 			then
 			col=11
-			print("e",8,y,col)
+			print("e",2,y,col)
 		end
-		print(msg,16,y,col)
+		print(msg,9,y,col)
 		y+=8
 	end
 	if anim_c%2<1 then
-		spr(55,6,14+(8*(eq_line-1)))
+		spr(55,0,14+(8*(eq_line-1)))
 	else
-		
 	end
+	local m=p1.moves[eq_line]
+	--bottom text (description)
+	rect(0,96,127,127,7)
+	print(m.desc,2,98,7)
+	--side text (stats)
+	rect(80,10,127,82,7)
+	local y=12
+	print("costs:",82,y,7)
+	y+=8
+	print(" eng: "..m.eng_cost,82,y,7)
+	y+=8
+	print(" clr: "..m.clr_cost,82,y,7)
+	y+=8
+	print("range:"..m.range,82,y,7)
+	y+=8
+	print("damage:"..m.dmg,82,y,7)
+	y+=8
+	print("targets:"..m.targets,82,y,7)
+	y+=8
+	print("lock-on:"..m.lock,82,y,7)
 	eq_mode_ctrl()
 end
 
@@ -2253,11 +2281,11 @@ function gen_room()
  add(entities,p1)
 	for y=0,8 do
 		for x=0,8 do
-			if rnd()<0.3 then
+			if rnd()<(0.1+0.05*tb_depth) then
 				spawn_rnd_enemy(x,y)
-				if rnd()<0.1 then
+				if rnd()<0.05 then
 					spawn_rnd_enemy(x,y)
-					if rnd()<0.1 then
+					if rnd()<0.05 then
 						spawn_rnd_enemy(x,y)
 					end
 				end
@@ -2287,7 +2315,21 @@ function gen_room()
 	end
 end
 -->8
---testing stuff??
+--loot management
+
+function gen_loot_item(stat_max)
+    local g=nil
+    g.slot=flr(rnd(7)+1)
+    e.patk=rnd(stat_max)
+	e.pspd=rnd(stat_max)
+	e.pdef=rnd(stat_max)
+	e.ablt=rnd(stat_max)
+	e.wspd=rnd(stat_max)
+end
+
+function gen_loot()
+
+end
 __gfx__
 00000000777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777000060007777777777777777
 00000000772227777722277777222777772227777777777777777777777777777700077777000777770007777700077777777777000660007700077777000777
