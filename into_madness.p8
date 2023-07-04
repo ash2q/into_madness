@@ -60,8 +60,8 @@ function _init()
 	init_map_pool()
 	--tb_spawn_slime(4,5)
 	equip(p1,int_warrior)
-	local sword=gen_sword(20)
-	equip(p1,sword)
+	--local sword=gen_sword(20)
+	--equip(p1,sword)
 	rebuild_player(p1)
 	--sword=gen_sword(20)
 	--r=gen_sword(40)
@@ -664,8 +664,6 @@ end
 
 int_slime=nil
 int_splicer=nil
-pri_sword=nil
-pri_spear=nil
 loot_pool={}
 
 function add_loot(l)
@@ -695,33 +693,13 @@ function init_gear()
 		luck=1,
 		moves={slash_move},
 	}
-	pri_sword={
+	start_module={
 		icon=13,
 		tb_t=tb_type.gear,
 		tb_anim=tb_anim_chest,
 		tb_spr_size=1,
-		name="sword",
-		desc=
-"a modern sword. nothing\n"..
-"special honestly, but feels good\n"..
-"in your hand",
 		moves={slash_move,bash_move},
 	}
-	--roll_stats(pri_sword,40)
-		add_loot(pri_sword)
-	pri_spear={
-		icon=37,
-		tb_t=tb_type.gear,
-		tb_anim=tb_anim_chest,
-		tb_spr_size=1,
-		name="spear",
-		desc=
-"a primitive spear. seems pretty\n"..
-"basic. faster than expected.",
-		moves={bash_move},
-	}
-	--roll_stats(pri_spear,40)
-	add_loot(pri_spear)
 	
 end
 
@@ -1995,6 +1973,10 @@ function equip_mode()
 	else
 	end
 	local m=p1.moves[eq_line]
+	if m==nil then
+		eq_leave()
+		return
+	end
 	--bottom text (description)
 	rect(0,96,127,127,7)
 	print(m.desc,2,98,7)

@@ -51,6 +51,10 @@ function equip_mode()
 	else
 	end
 	local m=p1.moves[eq_line]
+	if m==nil then
+		eq_leave()
+		return
+	end
 	--bottom text (description)
 	rect(0,96,127,127,7)
 	print(m.desc,2,98,7)
