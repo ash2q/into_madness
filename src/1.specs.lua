@@ -2,16 +2,6 @@
 
 entities={}
 
-e_state={
-	--deciding, walking
-	idle=1,
-	--targeting, usage delays
-	wind_up=2,
-	--using move/action
-	using=3,
-	--todo?
-	stumble=4
-}
 	
 --😐 react mode
 --🐱 fight mode
@@ -29,9 +19,8 @@ p1={
 	--tb_mv_anim={64,66,68,70},
 	tb_x=2,
 	tb_y=1,
-	
-	c_move_anim={64,64,72,72},
-	c_anim={64,64,72,72},
+	c_move_anim={128,130,132,134},
+	c_anim={128,128,134,134},
 	c_sz=2,
 	health=50,
 	max_health=100,
@@ -50,15 +39,11 @@ p1={
 	idle=20,
 	--efforts is either acts or moves
 	--depending on p_type
-	efforts={},
 	moves={},
 	acts={},
 	equips={},
 	fight_aspect={},
 	p_type=p1_aspect.fight, 
-	c_move_anim={128,130,132,134},
-	c_anim={128,128,134,134},
-	
 	to_fight=function(self)
 		self.efforts=self.moves
 		self.p_type=p1_aspect.fight
@@ -72,7 +57,6 @@ p1={
 
 int_warrior={
 	name="warrior int.",
-	slot=slot_num.intrinsic,
 	patk=10,
 	pspd=1,
 	pdef=1,
@@ -83,7 +67,6 @@ int_warrior={
 
 empty_gear={
 	name="empty gear",
-	slot=nil, --on purpose
 	patk=0,
 	pspd=0,
 	pdef=0,
@@ -156,9 +139,6 @@ function init_tb()
 
 end
 
-
-bounce_act={}
-
 function init_actions()
 	bounce_act={
 		name="bounce",
@@ -183,7 +163,6 @@ function init_gear()
 	init_moves()
 	int_slime={
 		name="slime int.",
-		slot=slot_num.intrinsic,
 		tb_t=tb_type.gear,
 		patk=10,
 		pspd=5,
@@ -195,7 +174,6 @@ function init_gear()
 	}
 	int_splicer={
 		name="splicer int.",
-		slot=slot_num.intrinsic,
 		tb_t=tb_type.gear,
 		patk=10,
 		pspd=5,
@@ -207,7 +185,6 @@ function init_gear()
 	}
 	pri_sword={
 		icon=13,
-		slot=slot_num.primary,
 		tb_t=tb_type.gear,
 		tb_anim=tb_anim_chest,
 		tb_spr_size=1,
@@ -222,7 +199,6 @@ function init_gear()
 		add_loot(pri_sword)
 	pri_spear={
 		icon=37,
-		slot=slot_num.primary,
 		tb_t=tb_type.gear,
 		tb_anim=tb_anim_chest,
 		tb_spr_size=1,
@@ -283,7 +259,7 @@ function roll_stats(s,total)
 	local hours=stat(93)
 	local tseed=secs+(mins*60)+(hours*60*60)
 	s.seed=flr(tseed+(time()*10)
-		+(roll_num*100)+(s.slot*10))
+		+(roll_num*100))
 	srand(s.seed)
 	aim=total/2
 	--note, no magic yet
@@ -367,6 +343,7 @@ bash_move={
 end
 
 
+
 function apply_dmg(src,e,dmg,rdmg)
 	if src==p1 then
 		add_log("attacking!"..anim_c)
@@ -388,4 +365,3 @@ function calc_attributes(e)
 	e.clr_max=50+(e.ablt*2)
 	e.speed=0.5+(e.wspd/10)
 end
-

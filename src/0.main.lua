@@ -21,29 +21,6 @@ game_state={
 anim_c=0
 state=game_state.dungeon
 
-
-slot_num={
-	intrinsic=1,
-	primary=2,
-	secondary=3,
-	helmet=4,
-	chestplate=5,
-	pants=6,
-	boots=7,
-	necklace=8
-}
-
-slot_names={  --slots:
-	"intrinsic", --1
-	"primary",   --2
-	"secondary", --3
-	"helmet",    --4
-	"chestplate",--5
-	"pants",     --6
-	"boots",     --7
-	"necklace"   --8
-}
-
 sanity=100.0
 
 tb_type={
@@ -441,12 +418,9 @@ end
 
 
 function equip(ent,g)
-	s=g.slot
-	assert(s!=nil)
-	assert(s<=#slot_names)
 	--unequip(ent,s)
 	assert(g!=nil)
-	ent.gear[s]=g
+	add(ent.gear,g)
 end
 
 function unequip(ent,slot)
@@ -532,6 +506,3 @@ function print_logs()
 		print(log_msgs[l-i],1,120-(i*8),7)
 	end
 end
-
-
-
