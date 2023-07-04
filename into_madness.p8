@@ -863,8 +863,8 @@ slash_move={
 	sound=0,
 	name="❎slash",
 	desc=
-"A broad focused slash.\n"..
-"Damages several.\n\n"..
+"a broad focused slash.\n"..
+"damages several.\n\n"..
 "cut them cut them cut them",
 	eng_cost=40,
 	clr_cost=10,
@@ -887,7 +887,7 @@ bash_move={
 	sound=0,
 	name="❎bash",
 	desc=
-"A brutal yet simple bash\n"..
+"a brutal yet simple bash\n"..
 "simple yet subpar.\n\n"..
 "they told me to do it",
 	eng_cost=20,
