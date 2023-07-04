@@ -855,9 +855,7 @@ function calc_attributes(e)
 	e.clr_max=50+(e.ablt*2)
 	e.speed=0.5+(e.wspd/10)
 end
--->8
 
--->8
 --combat
 
 --all enemies within the same
@@ -1226,7 +1224,7 @@ function x_held()
 end
 function x_double_tap()
 end
--->8
+
 --hud and swings
 
 function draw_hud()
@@ -1704,7 +1702,7 @@ function draw_swings()
 			--todo source animation
 	end
 end
--->8
+
 --parry and enemy ai
 
 rainbow_col={
@@ -1921,7 +1919,7 @@ function slime_ai(e)
 	
 	
 end
--->8
+
 --use, swap, status mode
 
 --the different tabs
@@ -2167,7 +2165,7 @@ function wait_mode()
 	print(wait_msg)
 	wait_time-=1
 end
--->8
+
 --map generation
 
 function gen_room_1()
@@ -2249,7 +2247,7 @@ function gen_room()
 		end
 	end
 end
--->8
+
 --loot management
 
 function gen_loot_item(stat_max)
