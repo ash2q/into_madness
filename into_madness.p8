@@ -39,7 +39,7 @@ shorts={}
 atexts={}
 
 function copy_into(dest,source)
-	for k,v in pairs(source) do
+	for k, v in pairs(source) do
 		dest[k]=v
 	end
 end
@@ -424,6 +424,7 @@ function equip(ent,g)
 	--unequip(ent,s)
 	assert(g!=nil)
 	add(ent.gear,g)
+	rebuild_entity(ent)
 end
 
 function unequip(ent,slot)
@@ -440,8 +441,10 @@ function calc_stats(ent)
 	ent.ablt=0
 	ent.wspd=0
 	ent.luck=0
+	printh("y")
 	for g in all(ent.gear) do
-		ent.patk+=g.patk
+		printh("x")
+		ent.patk+=1--g.patk
 		ent.pspd+=g.pspd
 		ent.pdef+=g.pdef
 		ent.ablt+=g.ablt
@@ -450,6 +453,25 @@ function calc_stats(ent)
 	end
 end
 
+function has_move(ent,name)
+	for i in all(ent.moves) do
+		if i==name then
+			return true
+		end
+	end
+end
+
+function move_level(ent,name)
+	local c=0
+	for g in all(ent.gear) do
+		for i in all(g.moves) do
+			if i==name then
+				c+=1
+			end
+		end
+	end
+	return c
+end
 
 function rebuild_lists(ent)
 	ent.moves={}
@@ -461,11 +483,15 @@ function rebuild_lists(ent)
 					ent.moves,m)
 				then
 				add(ent.moves,m)
-				if ent.mcount[m.name]==nil
+				tmp=ent.move_lvls[m]
+				if tmp==nil
 					then
-					ent.mcount[m.name]=0
+					local t={}
+					copy_into(t,all_moves[m])
+					ent.move_lvls[m]=t
 				end
-				ent.mcount[m.name]+=1
+			else
+				--does contain
 			end
 		end --for m
 	end
@@ -551,8 +577,17 @@ p1={
 	idle=20,
 	--efforts is either acts or moves
 	--depending on p_type
+	--this is all the move names available
 	moves={},
+	--this is a copied version
+	--of the base all_moves copy.
+	--This has levels etc applied.
+	--key-value pair
+	move_lvls={},
+
 	acts={},
+	--equips are mapped for use in
+	--combat! Only 3 at a time
 	equips={},
 	fight_aspect={},
 	p_type=p1_aspect.fight, 
@@ -563,7 +598,7 @@ p1={
 	to_react=function(self)
 		self.efforts=self.acts
 		self.p_type=p1_aspect.react
-	end
+	end,
 }
 
 
@@ -602,7 +637,7 @@ function init_tb()
 		tb_spr_size=0.75,
 		c_anim={74,76},
 		health=10,
-		moves={bash_move},
+		moves={},
 		tb_move=tb_move_still,
 		--energy(moves)
 		eng=0,
@@ -615,6 +650,7 @@ function init_tb()
 		ai=slime_ai,
 		--populated by equips
 		moves={},
+		move_lvls={},
 		gear={},
 	}
 	e_splicer={
@@ -626,7 +662,7 @@ function init_tb()
 		tb_spr_size=1,
 		c_anim={164,166},
 		health=10,
-		moves={bash_move},
+		moves={"bash"},
 		tb_move=tb_move_still,
 		--energy(moves)
 		eng=0,
@@ -639,6 +675,7 @@ function init_tb()
 		ai=slime_ai,
 		--populated by equips
 		moves={},
+		move_lvls={},
 		gear={},
 	}
 	tb_portal={
@@ -665,6 +702,7 @@ end
 int_slime=nil
 int_splicer=nil
 loot_pool={}
+all_moves={}
 
 function add_loot(l)
 	add(loot_pool,l)
@@ -680,7 +718,7 @@ function init_gear()
 		ablt=5,
 		wspd=1,
 		luck=1,
-		moves={slash_move},
+		moves={"slash"},
 	}
 	int_splicer={
 		name="splicer int.",
@@ -691,16 +729,26 @@ function init_gear()
 		ablt=5,
 		wspd=5,
 		luck=1,
-		moves={slash_move},
+		moves={"slash"},
 	}
 	start_module={
 		icon=13,
 		tb_t=tb_type.gear,
 		tb_anim=tb_anim_chest,
 		tb_spr_size=1,
-		moves={slash_move,bash_move},
+		moves={"bash"},
+		patk=1,
+		pspd=1,
+		pdef=1,
+		ablt=1,
+		wspd=1,
+		luck=1,
 	}
-	
+
+	all_moves={
+		slash=slash_move,
+		bash=bash_move
+	}	
 end
 
 function spawn_enemy(spec,x,y)
@@ -789,7 +837,7 @@ slash_move={
 	r_anim=r_anim,
 	s_anim=nil, --optional
 	sound=0,
-	name="❎slash",
+	name="slash",
 	desc=
 "a broad focused slash.\n"..
 "damages several.\n\n"..
@@ -806,6 +854,7 @@ slash_move={
 	ttl=20,
 	delay=2
 }
+all_moves.slash=slash_move
 bash_move={
 	icon=42,
 	icon_disabled=31,
@@ -813,7 +862,7 @@ bash_move={
 	r_anim={33,33,34,34,35,35,36,36},
 	s_anim=nil, --optional
 	sound=0,
-	name="❎bash",
+	name="bash",
 	desc=
 "a brutal yet simple bash\n"..
 "simple yet subpar.\n\n"..
@@ -830,6 +879,7 @@ bash_move={
 	ttl=20,
 	delay=5
 }
+all_moves.bash=bash_move
 end
 
 
@@ -895,6 +945,7 @@ function setup_combat()
 			y+=20
 		end
 	end
+	assert(#c_entities>1)
 end
 
 function combat_mode()
@@ -963,7 +1014,9 @@ end
 function c_enemy_control(e)
 	if p1!=e and 
 			e.tb_t==tb_type.enemy then
-		e.ai(e)
+		if e.ai!=nil then
+			e.ai(e)
+		end
 	end
 end
 
@@ -1104,7 +1157,9 @@ end
 --only for player
 function p_swing()
 	m=p1.selected_move
-	player_swing(m)
+	if m!=nil then
+		player_swing(m)
+	end
 end
 
 function recalc_stats(e)
@@ -1146,6 +1201,9 @@ function c_draw_entities()
 			anim=e.c_move_anim
 		else
 			anim=e.c_anim
+		end
+		if anim==nil then
+			anim={38} --chest
 		end
 		tmp=(c%#anim)+1
 		spr(anim[tmp],e.x-8,e.y-8,2,2)
@@ -1932,8 +1990,9 @@ function trigger_swap(g)
 	next_state=game_state.swap
 	wait_time=20
 	wait_msg=
-"enter swap, please release keys"
+"entering swap, please release keys"
 	swap_gear=g
+	assert(swap_gear!=nil)
 	state=game_state.wait
 end
 
@@ -1955,24 +2014,27 @@ function equip_mode()
 	reset()
 	local y=16
 	for m in all(p1.moves) do
-		local c=0
-		c=p1.mcount[m.name]
-		local lvl=flr(c/2+1)
-		msg=m.name.."(lvl: "..lvl..")"
 		local col=7
 		if contains(p1.equips, m)
 			then
 			col=11
 			print("e",2,y,col)
 		end
-		print(msg,9,y,col)
+		print(m,9,y,col)
 		y+=8
 	end
 	if anim_c%2<1 then
 		spr(55,0,14+(8*(eq_line-1)))
 	else
 	end
-	local m=p1.moves[eq_line]
+	if eq_line>#p1.moves then
+		eq_line=1
+	end
+	printh(p1.moves[eq_line])
+	local m=
+		p1.move_lvls[p1.moves[eq_line]]
+	assert(#p1.moves>0)
+	assert(m!=nil)
 	if m==nil then
 		eq_leave()
 		return
@@ -2012,9 +2074,9 @@ function eq_mode_ctrl()
 		local m1=p1.moves[eq_line]
 		if contains(p1.equips,p1.moves[eq_line])
 			then
-			del(p1.equips, m1)
+			del(p1.equips,m1.name)
 		elseif #p1.equips<=3 then
-			add(p1.equips, m1)
+			add(p1.equips,m1.name)
 		end
 	elseif btnp(🅾️) then
 		--leave menu
@@ -2043,20 +2105,34 @@ end
 
 
 swap_gear=nil
+sw_slot=1
 function swap_mode()
 	cls()
 	color(7)
-	g1=p1.gear[swap_gear.slot]
-	g2=swap_gear
-	assert(g1!=nil)
+	local g1=p1.gear[sw_slot]
+	if g1==nil or g1.seed==nil 
+		then
+		g1.seed=0
+		g1.name="[empty]"
+		g1.patk=0
+		g1.pspd=0
+		g1.pdef=0
+		g1.ablt=0
+		g1.wspd=0
+		g1.luck=0
+		g1.moves={}
+	end
+	local g2=swap_gear
+	--assert(g1!=nil)
 	assert(g2!=nil)
 	print(
 "old(stat) -> new(stat)")
-	print("slot: "..
-		slot_names[g2.slot])
+--	print("slot: "..
+--		slot_names[g2.slot])
 	if g2.seed==nil then
-		g2.seed="nil"
+		--g2.seed=0
 	end
+	assert(g2.seed!=nil)
 	print("seed:"..g1.seed.."->"..g2.seed)
 	y=18
 	print("name:",0,y,7)
@@ -2084,25 +2160,29 @@ function swap_mode()
 	y+=6
 	if #g1.moves>0 or #g2.moves>0
 		then
-		print("moves:",0,y,7)
-	end
+			print("moves:",0,y,7)
+		else
+			print("no moves",0,y,7)
+		end
 	y+=6
 	for i=1,max(#g1.moves,#g2.moves) do
 		local m1=g1.moves[i]
 		local m2=g2.moves[i]
 		if m1==nil then
-			m1={name="empty move"}
+			m1="empty move"
 		end
 		if m2==nil then
-			m2={name="empty move"}
+			m2="empty move"
 		end
 		local col=7
-		if m1.name==m2.name then
+		if m1==m2 then
 			col=8
 		end
-		print(""..m1.name,2,y,col)
+		local lvl1=move_level(p1,m1)
+		local lvl2=move_level(p1,m2)
+		print(""..m1.."v"..lvl1,2,y,col)
 		print("->", 50,y,7)
-		print(""..m2.name,60,y,col)
+		print(""..m2.."v"..lvl2,60,y,col)
 		y+=6
 	end
 	print(
@@ -2110,8 +2190,9 @@ function swap_mode()
 		0,y,7)
 		
 		if btnp(5) then
-			p1.gear[g2.slot]=g2
+			p1.gear[sw_slot]=g2
 			del(entities,g2)
+			rebuild_player(p1)
 			state=game_state.dungeon
 		end
 		if btnp(0) then
@@ -2123,9 +2204,9 @@ end
 function print_compare(lbl,old,
 		new,total,y)
 	local t_l=""..
-		(total-old)+new
+		(total)
 	local t_r=""..
-		(total-old)+new
+		(total-old+new)
 	if old>new then
 		rc=8
 		lc=11
@@ -2195,13 +2276,9 @@ function spawn_descend(x,y)
 end
 
 
-function spawn_rnd_gear(g,x,y)
-	local t={
-		tb_t=tb_type.gear,
-		tb_x=x,
-		tb_y=y
-	}
-	
+function spawn_rnd_gear(x,y)
+	local g=gen_loot_item(20+tb_depth*2)
+	spawn_gear(g,x,y)
 end
 
 function trigger_portal()
@@ -2250,16 +2327,52 @@ end
 
 --loot management
 
+base_item={
+	tb_spr_size=1,
+	tb_anim={38},
+	tb_t=tb_type.gear,
+	x=0,
+	y=0,
+	name="[empty]",
+	seed=0,
+	moves={},
+	cooldown=5
+}
+
+function frnd(m)
+	return flr(rnd(m))
+end
+
+
+function rnd_move()
+	while true do
+		for k,v in pairs(all_moves) do
+			if rnd()<0.5 then
+				return k
+			end
+		end
+	end
+end
+
 function gen_loot_item(stat_max)
-    local g=nil
-    g.slot=flr(rnd(7)+1)
-    e.patk=rnd(stat_max)
-	e.pspd=rnd(stat_max)
-	e.pdef=rnd(stat_max)
-	e.ablt=rnd(stat_max)
-	e.wspd=rnd(stat_max)
-    
-    return g
+	local e={
+			patk=frnd(stat_max),
+			pspd=frnd(stat_max),
+			pdef=frnd(stat_max),
+			ablt=frnd(stat_max),
+			wspd=frnd(stat_max),
+			luck=frnd(stat_max),
+	}
+	copy_into(e,base_item)
+	e.moves={}
+	if true then
+		--has move
+		add(e.moves,rnd_move())
+		if rnd()<0.2 then
+				add(e.moves,rnd_move())
+		end
+	end
+ return e
 end
 
 function gen_loot()
