@@ -922,7 +922,7 @@ function setup_combat()
 	p1.y=70
 	p1.moved=false
 	--p1.moves={slash_move}
-	p1.selected_move=p1.moves[1]
+	p1.selected_move=nil --p1.moves[1]
 	
 	--print_table("-----player 1-----"
 	--	,p1)
@@ -1077,7 +1077,7 @@ function c_player_control()
 		end
 		if num!=nil and p1.equips[num]!=nil 
 			then
-			p1.selected_move=p1.equips[num]	
+			p1.selected_move=p1.moves[num]	
 		end
 	else
 		z_hold=false
@@ -1310,7 +1310,7 @@ function draw_hud()
 	m=p1.selected_move
 	if m!=nil then
 		local s=m.icon
-		if m.eng_cost>p1.eng then
+		if p1.move_lvls[m].eng_cost>p1.eng then
 			s=m.icon_disabled
 		end
 		spr(s,15,3)
@@ -1479,7 +1479,7 @@ function add_swing(src,mv)
 		--dist=xd+yd,
 		mv=mv,
 		src=src,
-		cooldown=mv.cooldown,
+		cooldown=move_lvls[mv].cooldown,
 		hitbox=4,
 		lock=mv.lock,
 		rotate=true, --todo
@@ -1487,8 +1487,8 @@ function add_swing(src,mv)
 		done=false,
 		hits={},
 		state=0,
-		ttl=mv.ttl,
-		delay=mv.delay
+		ttl=move_lvls[mv].ttl,
+		delay=move_lvls[mv].delay
 	}
 	if check_costs(s) then
 		add(swings,s)
@@ -1539,12 +1539,13 @@ function enemy_swing(e,mv)
 	if not has_swing(e) then
 		return nil
 	end
-	local s=add_swing(e,mv)
-	if s==nil then return nil end
-	s.x=e.x-8
-	s.y=e.y
-	s.hitbox=16
-	return s
+	return nil
+	--local s=add_swing(e,mv)
+	--if s==nil then return nil end
+	--s.x=e.x-8
+	--s.y=e.y
+	--s.hitbox=16
+	--return s
 end
 
 function swing_hit(e,s)
@@ -1968,7 +1969,7 @@ function slime_ai(e)
 		return
 	end
 	av_moves={}
-	for mv in all(e.moves) do
+	for mv in all(e.move_lvls) do
 		if e.eng>=mv.eng_cost then
 			add(av_moves,mv)
 		end
@@ -2072,11 +2073,11 @@ function eq_mode_ctrl()
 	elseif btnp(❎) then
 		--equip/unequip
 		local m1=p1.moves[eq_line]
-		if contains(p1.equips,p1.moves[eq_line])
+		if contains(p1.equips,m1)
 			then
-			del(p1.equips,m1.name)
+			del(p1.equips,m1)
 		elseif #p1.equips<=3 then
-			add(p1.equips,m1.name)
+			add(p1.equips,m1)
 		end
 	elseif btnp(🅾️) then
 		--leave menu
