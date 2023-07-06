@@ -1307,9 +1307,10 @@ function draw_hud()
 	--	rectfill(15,3,21,10,3)
 	--end
 	local m=nil
+	local s=nil
 	m=p1.selected_move
 	if m!=nil then
-		local s=m.icon
+		s=p1.move_lvls[m].icon
 		if p1.move_lvls[m].eng_cost>p1.eng then
 			s=m.icon_disabled
 		end
@@ -1417,7 +1418,7 @@ function draw_dial()
 	local a=p1.equips[3]
 	local t="[empty]"
 	if a!=nil then
-		t=a.name
+		t=a
 	end
 	local x=40
 	local y=25
@@ -1430,7 +1431,7 @@ function draw_dial()
 	a=p1.equips[1]
 	t="[empty]"
 	if a!=nil then
-		t=a.name
+		t=a
 	end
 	x=8
  	y=44
@@ -1443,7 +1444,7 @@ function draw_dial()
 	a=p1.equips[4]
 	t="[empty]"
 	if a!=nil then
-		t=a.name
+		t=a
 	end
 	x=40
 	y=65
@@ -1457,7 +1458,7 @@ function draw_dial()
 	a=p1.equips[2]
 	t="[empty]"
 	if a!=nil then
-		t=a.name
+		t=a
 	end
 	x=80
  y=44
@@ -1479,7 +1480,7 @@ function add_swing(src,mv)
 		--dist=xd+yd,
 		mv=mv,
 		src=src,
-		cooldown=move_lvls[mv].cooldown,
+		cooldown=src.move_lvls[mv].cooldown,
 		hitbox=4,
 		lock=mv.lock,
 		rotate=true, --todo
@@ -1487,8 +1488,8 @@ function add_swing(src,mv)
 		done=false,
 		hits={},
 		state=0,
-		ttl=move_lvls[mv].ttl,
-		delay=move_lvls[mv].delay
+		ttl=src.move_lvls[mv].ttl,
+		delay=src.move_lvls[mv].delay
 	}
 	if check_costs(s) then
 		add(swings,s)
@@ -1550,11 +1551,13 @@ end
 
 function swing_hit(e,s)
 	if parry_dmg_mul>0 then
-		play_anim(s.mv.t_anim,
+		play_anim(
+			s.src.move_lvls[s.mv].t_anim,
 			e.x,e.y)
 	end
 	if parry_rdmg_mul>0 then	
-		play_anim(s.mv.r_anim,
+		play_anim(
+			s.src.move_lvls[mv].r_anim,
 			s.src.x,s.src.y)
 	end
 	apply_dmg(s.src,e,
@@ -1563,14 +1566,15 @@ end
 
 --computes damage for swing
 function calc_dmg(s)
-	local d=s.mv.dmg
+	local d=
+		s.src.move_lvls[s.mv].dmg
 	d*=(s.src.patk/10)+1
 	d*=parry_dmg_mul
 	--todo apply armor etc
 	return d
 end
 function calc_rdmg(s)
-	local d=s.mv.dmg
+	local d=s.src.move_lvls[s.mv].dmg
 	d*=parry_rdmg_mul
 	--todo apply armor etc
 	return d
@@ -1629,6 +1633,10 @@ function process_swing(sw)
 				if e.faction!=sw.src.faction
 					then
 					if in_hitbox(e,sw) then
+						if sw.lock==nil then
+							sw.lock=
+								sw.src.move_lvls[sw.mv].lock
+						end
 						if sw.lock<=0 then
 							sw.state=s_state.locked
 						else
@@ -1708,17 +1716,20 @@ function apply_costs(sw)
 		src.eng-=sw.mv.eng_cost/2
 		src.clr-=sw.mv.clr_cost/2
 	else
-		src.eng-=sw.mv.eng_cost
-		src.clr-=sw.mv.clr_cost
+		src.eng-=
+			src.move_lvls[sw.mv].eng_cost
+		src.clr-=
+			src.move_lvls[sw.mv].clr_cost
 	end
 end
 
 function check_costs(sw)
 	local src=sw.src
-	if src.eng<sw.mv.eng_cost then
+	local m=src.move_lvls[sw.mv]
+	if src.eng<m.eng_cost then
 		return false
 	end
-	if src.clr<sw.mv.clr_cost then
+	if src.clr<m.clr_cost then
 		return false
 	end
 	return true
