@@ -142,24 +142,44 @@ function dungeon_mode()
 	tb_draw_entities()
 	tb_draw_walls()
 	tb_draw_status()
-	tb_draw_tutorial()
+	if draw_room_text then
+		tb_draw_tutorial()
+	end
 	turn_over=false
 end
 
+text_state=0
 function tb_draw_tutorial()
-	local x=24
-	local y=80
-	rectfill(x-3,y-3,x+29,y+13,0)
-	print(
-"accept\n"..
-"warrior", x,y,15)
-
-x=76
-y=80
-rectfill(x-3,y-3,x+29,y+13,0)
-print(
-"accept\n"..
-"rogue", x,y,15)
+	if text_state==0 then
+		local x=24
+		local y=80
+		rectfill(x-3,y-3,x+29,y+13,0)
+		print(
+			"accept\n"..
+			"warrior", x,y,15)
+		x=76
+		y=80
+		rectfill(x-3,y-3,x+29,y+13,0)
+		print(
+		"accept\n"..
+		"rogue", x,y,15)
+		if #p1.moves>0 then
+			text_state=1
+		end
+	elseif text_state==1 then
+		local x=20
+		local y= 24
+		rectfill(x-3,y-3,x+80,y+32,0)
+		print(
+			"push 🅾️ to equip your\n".. 
+			"lethal punch.\n\n"..
+			"your journey begins\n"..
+			"through the portal",
+			x,y,15)
+		if tb_depth>0 then
+			text_state=2
+		end
+	end
 end
 
 function tb_draw_status()
@@ -785,12 +805,6 @@ function init_gear()
 		luck=0,
 		moves={},
 	}
-	
-
-	all_moves={
-		slash=slash_move,
-		bash=bash_move
-	}	
 end
 
 function spawn_enemy(spec,x,y)
@@ -1782,15 +1796,15 @@ function process_swing(sw)
 end
 
 function apply_costs(sw)
+	local m=
+		sw.src.move_lvls[sw.mv]
 	local src=sw.src
 	if sw.missed then
-		src.eng-=sw.mv.eng_cost/2
-		src.clr-=sw.mv.clr_cost/2
+		src.eng-=m/2
+		src.clr-=m/2
 	else
-		src.eng-=
-			src.move_lvls[sw.mv].eng_cost
-		src.clr-=
-			src.move_lvls[sw.mv].clr_cost
+		src.eng-=m.eng_cost
+		src.clr-=m.clr_cost
 	end
 end
 
@@ -2371,6 +2385,7 @@ function gen_room_0()
 	local int=int_rogue
 	spawn_gear(int,4,3)
 	draw_room_text=true
+	spawn_descend(2,5)
 end
 
 function trigger_portal()
