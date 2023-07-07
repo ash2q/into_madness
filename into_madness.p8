@@ -59,7 +59,6 @@ function _init()
 	init_gear_slots(p1)
 	init_map_pool()
 	--tb_spawn_slime(4,5)
-	equip(p1,int_warrior)
 	--local sword=gen_sword(20)
 	--equip(p1,sword)
 	rebuild_player(p1)
@@ -143,9 +142,25 @@ function dungeon_mode()
 	tb_draw_entities()
 	tb_draw_walls()
 	tb_draw_status()
+	tb_draw_tutorial()
 	turn_over=false
 end
 
+function tb_draw_tutorial()
+	local x=24
+	local y=80
+	rectfill(x-3,y-3,x+29,y+13,0)
+	print(
+"accept\n"..
+"warrior", x,y,15)
+
+x=76
+y=80
+rectfill(x-3,y-3,x+29,y+13,0)
+print(
+"accept\n"..
+"rogue", x,y,15)
+end
 
 function tb_draw_status()
 	print("health: "..p1.health.."/"..p1.max_health,
@@ -244,12 +259,20 @@ function tb_draw_entity(e,c)
 		x=tx*16+8
 		y=ty*16+8
 	end
-	assert(e.tb_spr_size!=nil)
-	local tmp=(ac%#e.tb_anim)+1
-	spr(e.tb_anim[tmp],
+	
+	local sz=e.tb_spr_size
+	if sz==nil then
+		sz=1
+	end
+	local anim=e.tb_anim
+	if anim==nil then
+		anim=tb_anim_chest
+	end
+ local i=(ac%#anim)+1
+	spr(anim[i],
 		x+16,y+16,
-		e.tb_spr_size,
-		e.tb_spr_size)
+		sz,
+		sz)
 end
 
 function draw_grid()
@@ -461,7 +484,7 @@ function has_move(ent,name)
 	end
 end
 
-function move_level(ent,name)
+function move_lvl(ent,name)
 	local c=0
 	for g in all(ent.gear) do
 		for i in all(g.moves) do
@@ -602,26 +625,7 @@ p1={
 }
 
 
-int_warrior={
-	name="warrior int.",
-	patk=10,
-	pspd=1,
-	pdef=1,
-	ablt=1,
-	wspd=5,
-	luck=1,
-}
 
-empty_gear={
-	name="empty gear",
-	patk=0,
-	pspd=0,
-	pdef=0,
-	ablt=0,
-	wspd=0,
-	luck=0,
-	moves={},
-}
 
 e_slime={}
 e_splicer={}
@@ -701,6 +705,8 @@ end
 
 int_slime=nil
 int_splicer=nil
+int_warrior=nil
+empty_gear=nil
 loot_pool={}
 all_moves={}
 
@@ -719,6 +725,7 @@ function init_gear()
 		wspd=1,
 		luck=1,
 		moves={"slash"},
+		seed=0
 	}
 	int_splicer={
 		name="splicer int.",
@@ -730,6 +737,7 @@ function init_gear()
 		wspd=5,
 		luck=1,
 		moves={"slash"},
+		seed=0
 	}
 	start_module={
 		icon=13,
@@ -743,7 +751,41 @@ function init_gear()
 		ablt=1,
 		wspd=1,
 		luck=1,
+		seed=0
 	}
+	int_warrior={
+		name="warrior int.",
+		patk=10,
+		pspd=1,
+		pdef=1,
+		ablt=1,
+		wspd=5,
+		luck=1,
+		moves={"punch"}
+	}
+
+	int_rogue={
+		name="rogue int.",
+		patk=1,
+		pspd=20,
+		pdef=10,
+		ablt=1,
+		wspd=5,
+		luck=2,
+		moves={"punch"}
+	}
+
+	empty_gear={
+		name="empty gear",
+		patk=0,
+		pspd=0,
+		pdef=0,
+		ablt=0,
+		wspd=0,
+		luck=0,
+		moves={},
+	}
+	
 
 	all_moves={
 		slash=slash_move,
@@ -778,7 +820,7 @@ function spawn_splicer(x,y)
 end
 function spawn_gear(g,x,y)
 	local e={
-		tb_t=tb_type.enemy,
+		tb_t=tb_type.gear,
 		tb_x=x,
 		tb_y=y
 		--tb_anim={38,38}
@@ -825,6 +867,7 @@ end
 
 slash_move=nil
 bash_move=nil
+punch_move=nil
 function init_moves()
 	--defaults
 	local r_anim={33,33,34,34,35,35,36,36}
@@ -880,6 +923,33 @@ bash_move={
 	delay=5
 }
 all_moves.bash=bash_move
+
+punch_move={
+	icon=56,
+	icon_disabled=31,
+	t_anim={26,27,28,29},
+	r_anim={33,33,34,34,35,35,36,36},
+	s_anim=nil, --optional
+	sound=0,
+	name="punch",
+	desc=
+"Inspired by a visit to\n"..
+"a land of punches\n\n"..
+"harder, please, more, please",
+	eng_cost=10,
+	clr_cost=0,
+	range=20,
+	dmg=0.5,
+	splash=false,
+	spin=false,
+	cooldown=2,
+	lock=0,
+	targets=1,
+	ttl=20,
+	delay=5
+}
+all_moves.punch=punch_move
+
 end
 
 
@@ -1337,6 +1407,7 @@ function draw_hud()
 	draw_log()
 	draw_sanity()
 end
+
 
 function draw_sanity()
 	print("self:",98,4,7)
@@ -2142,7 +2213,7 @@ function swap_mode()
 --	print("slot: "..
 --		slot_names[g2.slot])
 	if g2.seed==nil then
-		--g2.seed=0
+		g2.seed=0
 	end
 	assert(g2.seed!=nil)
 	print("seed:"..g1.seed.."->"..g2.seed)
@@ -2190,8 +2261,8 @@ function swap_mode()
 		if m1==m2 then
 			col=8
 		end
-		local lvl1=move_level(p1,m1)
-		local lvl2=move_level(p1,m2)
+		local lvl1=move_lvl(p1,m1)
+		local lvl2=move_lvl(p1,m2)
 		print(""..m1.."v"..lvl1,2,y,col)
 		print("->", 50,y,7)
 		print(""..m2.."v"..lvl2,60,y,col)
@@ -2293,12 +2364,29 @@ function spawn_rnd_gear(x,y)
 	spawn_gear(g,x,y)
 end
 
+function gen_room_0()
+	entities={}
+	local int=int_warrior
+	spawn_gear(int,1,3)
+	local int=int_rogue
+	spawn_gear(int,4,3)
+	draw_room_text=true
+end
+
 function trigger_portal()
-	tb_depth+=1
-	gen_room()
+	if #p1.equips>0
+	then
+		tb_depth+=1
+		gen_room()
+	else
+
+	end
 end
 
 function gen_room()
+	if tb_depth<=0 then
+		return gen_room_0()
+	end
  entities={}
  add(entities,p1)
 	for y=0,8 do
@@ -2416,13 +2504,13 @@ __gfx__
 77700777777777777775707775757550577577550000400070000007777775757777777777770777cccc66c07000007770000077000000000000000000000000
 77700777777777777777777777757707575775570000400077777777777777557777777777777777000cccc07070707777070777000000000000000000000000
 ccccccccbbbbbbbbaaaaaaaa88188888000700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-ccccccccbbbbbbbbaaaaaaaa888818880077007008800cc006600660000060000000000000000000000000000000000000000000000000000000000000000000
-c00cc00cb00bb00ba09aa90a80888808070700000888ccc006666660000066000000000000000000000000000000000000000000000000000000000000000000
-c00cc00cb00bb00ba00aa00a1808808877070770008ccc0000666600000666600000000000000000000000000000000000000000000000000000000000000000
-ccccccccbbbbbbbbaaaaaaaa888818887700007000ccc80000666600000666660000000000000000000000000000000000000000000000000000000000000000
-c0cccc0cbbbbbbbbaa0909aa10919908700070774ccc888456666665000666600000000000000000000000000000000000000000000000000000000000000000
-cc0000ccbbb00bbbaa9090aa800000010077007704c0084005600650000066000000000000000000000000000000000000000000000000000000000000000000
-ccccccccbbbbbbbbaaaaaaaa88188888700070004040040450500505000060000000000000000000000000000000000000000000000000000000000000000000
+ccccccccbbbbbbbbaaaaaaaa888818880077007008800cc006600660000060000f0f0f0f00000000000000000000000000000000000000000000000000000000
+c00cc00cb00bb00ba09aa90a80888808070700000888ccc00666666000006600ff0f0f0f00000000000000000000000000000000000000000000000000000000
+c00cc00cb00bb00ba00aa00a1808808877070770008ccc000066660000066660ff0f0f0f00000000000000000000000000000000000000000000000000000000
+ccccccccbbbbbbbbaaaaaaaa888818887700007000ccc8000066660000066666ffffffff00000000000000000000000000000000000000000000000000000000
+c0cccc0cbbbbbbbbaa0909aa10919908700070774ccc88845666666500066660ffffffff00000000000000000000000000000000000000000000000000000000
+cc0000ccbbb00bbbaa9090aa800000010077007704c00840056006500000660000ffff0000000000000000000000000000000000000000000000000000000000
+ccccccccbbbbbbbbaaaaaaaa881888887000700040400404505005050000600000ffff0000000000000000000000000000000000000000000000000000000000
 77777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777770000000000000000
 777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777bb77777777777777bb77770000000000000000
 77777777777777777777777777777777777777777777777777777777777777777777777777777777777777777bb37777777777777bb377770000000000000000
