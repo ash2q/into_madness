@@ -2488,7 +2488,9 @@ function gen_loot_item(stat_max)
 				add(e.moves,rnd_move())
 		end
 	end
-	e.slot=flr(rnd(6))
+	--+2 so that intrinsic does
+	--not spawn
+	e.slot=flr(rnd(#slot_names-1)+2)
  return e
 end
 
