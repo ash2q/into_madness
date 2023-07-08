@@ -561,9 +561,9 @@ function rebuild_player(e)
 end
 
 function init_gear_slots(e)
-	while #e.gear<8 do
-		add(e.gear,empty_gear)
-	end
+	--while #e.gear<#slot_names do
+		--add(e.gear,empty_gear)
+	--end
 end
 
 log_msgs={"","",""}
@@ -726,7 +726,6 @@ end
 int_slime=nil
 int_splicer=nil
 int_warrior=nil
-empty_gear=nil
 loot_pool={}
 all_moves={}
 
@@ -771,7 +770,8 @@ function init_gear()
 		ablt=1,
 		wspd=1,
 		luck=1,
-		seed=0
+		seed=0,
+		slot=1,
 	}
 	int_warrior={
 		name="warrior int.",
@@ -781,7 +781,8 @@ function init_gear()
 		ablt=1,
 		wspd=5,
 		luck=1,
-		moves={"punch"}
+		moves={"punch"},
+		slot=1
 	}
 
 	int_rogue={
@@ -792,19 +793,10 @@ function init_gear()
 		ablt=1,
 		wspd=5,
 		luck=2,
-		moves={"punch"}
+		moves={"punch"},
+		slot=1
 	}
 
-	empty_gear={
-		name="empty gear",
-		patk=0,
-		pspd=0,
-		pdef=0,
-		ablt=0,
-		wspd=0,
-		luck=0,
-		moves={},
-	}
 end
 
 function spawn_enemy(spec,x,y)
@@ -2199,16 +2191,22 @@ function eq_leave()
 end
 
 
-
+slot_names={
+	"intrinsic",
+	"helmet",
+	"chestpiece",
+	"pants",
+	"shoes"
+}
 
 swap_gear=nil
-sw_slot=1
 function swap_mode()
 	cls()
 	color(7)
-	local g1=p1.gear[sw_slot]
+	local g1=p1.gear[swap_gear.slot]
 	if g1==nil or g1.seed==nil 
 		then
+		g1={}
 		g1.seed=0
 		g1.name="[empty]"
 		g1.patk=0
@@ -2224,8 +2222,8 @@ function swap_mode()
 	assert(g2!=nil)
 	print(
 "old(stat) -> new(stat)")
---	print("slot: "..
---		slot_names[g2.slot])
+	local t=slot_names[g2.slot]
+	print("slot: "..t)
 	if g2.seed==nil then
 		g2.seed=0
 	end
@@ -2287,7 +2285,7 @@ function swap_mode()
 		0,y,7)
 		
 		if btnp(5) then
-			p1.gear[sw_slot]=g2
+			p1.gear[swap_gear.slot]=g2
 			del(entities,g2)
 			rebuild_player(p1)
 			state=game_state.dungeon
@@ -2487,6 +2485,7 @@ function gen_loot_item(stat_max)
 				add(e.moves,rnd_move())
 		end
 	end
+	e.slot=flr(rnd(#slot_names+1))
  return e
 end
 
