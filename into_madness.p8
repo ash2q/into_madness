@@ -2228,7 +2228,7 @@ function swap_mode()
 		g2.seed=0
 	end
 	assert(g2.seed!=nil)
-	print("seed:"..g1.seed.."->"..g2.seed)
+	print("seed:"..g2.seed.."->"..g2.seed)
 	y=18
 	print("name:",0,y,7)
 	print(""..g1.name,20,y,7)
@@ -2467,8 +2467,11 @@ function rnd_move()
 	end
 end
 
+loot_seed=1
 function gen_loot_item(stat_max)
+	loot_seed+=1
 	local e={
+			seed=loot_seed,
 			patk=frnd(stat_max),
 			pspd=frnd(stat_max),
 			pdef=frnd(stat_max),
@@ -2485,7 +2488,7 @@ function gen_loot_item(stat_max)
 				add(e.moves,rnd_move())
 		end
 	end
-	e.slot=flr(rnd(#slot_names+1))
+	e.slot=flr(rnd(6))
  return e
 end
 
