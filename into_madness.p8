@@ -1792,8 +1792,8 @@ function apply_costs(sw)
 		sw.src.move_lvls[sw.mv]
 	local src=sw.src
 	if sw.missed then
-		src.eng-=m/2
-		src.clr-=m/2
+		src.eng-=m.eng_cost/2
+		src.clr-=m.clr_cost/2
 	else
 		src.eng-=m.eng_cost
 		src.clr-=m.clr_cost
@@ -2230,11 +2230,6 @@ function swap_mode()
 	assert(g2.seed!=nil)
 	print("seed:"..g2.seed.."->"..g2.seed)
 	y=18
-	print("name:",0,y,7)
-	print(""..g1.name,20,y,7)
-	print("->",50,y,7)
-	print(""..g2.name,60,y,7)
-	y+=6
 	print_compare("patk",
 		g1.patk,g2.patk,p1.patk,y)
 	y+=6
